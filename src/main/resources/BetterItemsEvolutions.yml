@@ -1,0 +1,279 @@
+bie:
+  # Configuração de ferramentas que podem usar cada encantamento
+  ferramentas:
+    pickaxe:
+      Efficiency: true
+      Mending: true
+      Unbreaking: true
+      Fortune: true
+      Silk Touch: true
+
+    shovel:
+      Efficiency: true
+      Mending: true
+      Unbreaking: true
+      Fortune: true
+      Silk_Touch: true
+
+    axe:
+      Efficiency: true
+      Mending: true
+      Unbreaking: true
+      Fortune: true
+      Looting: true
+      Sharpness: true
+      Silk_Touch: true
+      Fire_Aspect: true
+      Knockback: true
+      Smite: true
+      Bane_of_Arthropods: true
+      Desabar: true
+
+    sword:
+      Mending: true
+      Unbreaking: true
+      Looting: true
+      Sharpness: true
+      Fire_Aspect: true
+      Sweeping Edge: true
+      Knockback: true
+      Smite: true
+      Bane of Arthropods: true
+
+    bow:
+      Mending: true
+      Unbreaking: true
+      Looting: true
+      Power: true
+      Punch: true
+      Infinity: true
+      Flame: true
+
+    crossbow:
+      Mending: true
+      Unbreaking: true
+      Quick_Charge: true
+      Piercing: true
+      Multishot: true
+
+    fishing_rod:
+      Mending: true
+      Unbreaking: true
+      Lure: true
+      Luck of the Sea: true
+
+    hoe:
+      Efficiency: true
+      Mending: true
+      Unbreaking: true
+      Fortune: true
+      Silk_Touch: true
+
+    helmet:
+      Mending: true
+      Unbreaking: true
+      Protection: true
+      Thorns: true
+      Aqua_Affinity: true
+      Respiration: true
+      Blast_Protection: true
+      Projectile_Protection: true
+      Fire_Protection: true
+
+    chestplate:
+      Mending: true
+      Unbreaking: true
+      Protection: true
+      Thorns: true
+      Blast_Protection: true
+      Projectile_Protection: true
+      Fire_Protection: true
+
+    leggings:
+      Mending: true
+      Unbreaking: true
+      Protection: true
+      Thorns: true
+      Soul_Speed: true
+      Swift_Sneak: true
+      Blast_Protection: true
+      Projectile_Protection: true
+      Fire_Protection: true
+
+    boots:
+      Mending: true
+      Unbreaking: true
+      Protection: true
+      Thorns: true
+      Frost_Walker: true
+      Depth_Strider: true
+      Feather_Falling: true
+      Blast_Protection: true
+      Projectile_Protection: true
+      Fire_Protection: true
+
+  # Configuração dos encantamentos
+  encantamentos:
+    Efficiency:
+      custopontos: [4, 6, 8, 12, 14, 18]
+      custoitem: ["16 redstone", "32 redstone", "64 redstone", "16 redstone_block", "32 redstone_block", "64 redstone_block"]
+
+    Mending:
+      custopontos: [8]
+      custoitem: ["1 nexo:mending_book"]
+
+    Unbreaking:
+      custopontos: [6, 8, 12, 14]
+      custoitem: ["1 copper_ingot", "1 iron_ingot", "1 diamond", "1 netherite_scrap"]
+
+    Fortune:
+      custopontos: [6, 8, 12, 14]
+      custoitem: ["32 lapis_lazuli", "16 lapis_block", "64 lapis_block", "4 rabbit_foot"]
+
+    Looting:
+      custopontos: [6, 8, 12, 14]
+      custoitem: ["32 lapis_lazuli", "16 lapis_block", "64 lapis_block", "4 rabbit_foot"]
+
+    Sharpness:
+      custopontos: [4, 6, 8, 12, 14, 18]
+      custoitem: ["16 iron_ingot", "32 iron_ingot", "64 quartz", "32 quartz_block", "1 netherite_scrap", "4 netherite_scrap"]
+
+    "Silk_Touch":
+      custopontos: [12]
+      custoitem: ["1 seda_magica"]
+
+    "Fire_Aspect":
+      custopontos: [6, 8]
+      custoitem: ["16 blaze_rod", "32 blaze_rod"]
+
+    "Sweeping_Edge":
+      custopontos: [6, 8, 12]
+      custoitem: ["8 phantom_membrane", "16 phantom_membrane", "8 ender_pearl"]
+
+    Knockback:
+      custopontos: [6, 8]
+      custoitem: ["2 ghast_tear", "4 ghast_tear"]
+
+    Power:
+      custopontos: [4, 6, 8, 12, 14, 18]
+      custoitem: ["16 flint", "32 flint", "64 quartz", "32 quartz_block", "1 netherite_scrap", "4 netherite_scrap"]
+
+    Punch:
+      custopontos: [6, 8]
+      custoitem: ["8 tnt", "8 slime_block"]
+
+    Infinity:
+      custopontos: [8]
+      custoitem: ["8 ender_eye"]
+
+    Flame:
+      custopontos: [8]
+      custoitem: ["16 blaze_rod"]
+
+    Lure:
+      custopontos: [4, 6, 8]
+      custoitem: ["16 bread", "1 golden_carrot", "1 golden_apple"]
+
+    "Luck_of_the_Sea":
+      custopontos: [4, 6, 8]
+      custoitem: ["16 lapis_lazuli", "32 lapis_lazuli", "64 lapis_lazuli"]
+
+    Protection:
+      custopontos: [4, 6, 8, 12, 14]
+      custoitem: ["1 smooth_stone", "1 copper_block", "1 iron_block", "1 diamond_block", "1 netherite_block"]
+
+    Thorns:
+      custopontos: [6, 8, 12]
+      custoitem: ["16 cactus", "32 cactus", "64 cactus"]
+
+    "Aqua_Affinity":
+      custopontos: [8]
+      custoitem: ["2 nautilus_shell"]
+
+    Respiration:
+      custopontos: [4, 6, 8, 12]
+      custoitem: ["1 water_breathing_potion", "1 nautilus_shell", "1 turtle_scute", "1 heart_of_the_sea"]
+
+    "Soul_Speed":
+      custopontos: [6, 8, 12]
+      custoitem: ["32 soul_sand", "64 soul_sand", "16 ghast_tear"]
+
+    "Frost_Walker":
+      custopontos: [6, 8]
+      custoitem: ["16 blue_ice", "32 blue_ice"]
+
+    "Depth_Strider":
+      custopontos: [6, 8, 12]
+      custoitem: ["1 iron_block", "1 copper_block", "1 gold_block"]
+
+    "Feather_Falling":
+      custopontos: [4, 6, 8, 12]
+      custoitem: ["16 feather", "16 hay_block", "16 phantom_membrane", "16 wind_charge"]
+
+    "Quick_Charge":
+      custopontos: [6, 8, 12]
+      custoitem: ["16 redstone", "32 redstone", "64 redstone"]
+
+    Smite:
+      custopontos: [4, 6, 8, 12, 14, 18]
+      custoitem: ["32 bone", "64 bone", "32 rotten_flesh", "64 rotten_flesh", "1 barrier", "1 barrier"]
+
+    "Bane_of_Arthropods":
+      custopontos: [4, 6, 8, 12, 14, 18]
+      custoitem: ["32 string", "64 white_wool", "32 spider_eye", "64 spider_eye", "1 barrier", "1 barrier"]
+
+    Piercing:
+      custopontos: [4, 6, 8, 12]
+      custoitem: ["16 flint", "17 amethyst_shard", "16 quartz", "32 prismarine_shard"]
+
+    Multishot:
+      custopontos: [6]
+      custoitem: ["64 arrow"]
+
+    Channeling:
+      custopontos: [6]
+      custoitem: ["32 lightning_rod"]
+
+    Riptide:
+      custopontos: [6, 8, 12]
+      custoitem: ["1 barrier", "1 barrier", "1 barrier"]
+
+    Loyalty:
+      custopontos: [4, 6, 8]
+      custoitem: ["8 ender_pearl", "12 ender_pearl", "16 ender_pearl"]
+
+    Impaling:
+      custopontos: [4, 6, 8, 12, 14]
+      custoitem: ["16 flint", "16 amethyst_shard", "16 quartz", "16 prismarine_shard", "1 netherite_scrap"]
+
+    "Blast_Protection":
+      custopontos: [8, 12, 14, 18, 20]
+      custoitem: ["8 tnt", "16 tnt", "32 tnt", "3 iron_block", "1 netherite_ingot"]
+
+    "Projectile_Protection":
+      custopontos: [8, 12, 14, 18, 20]
+      custoitem: ["1 shield", "64 arrow", "1 iron_block", "3 iron_block", "1 netherite_ingot"]
+
+    "Fire_Protection":
+      custopontos: [8, 12, 14, 18, 20]
+      custoitem: ["1 fire_resistance_potion", "32 blaze_powder", "64 blaze_powder", "3 iron_block", "1 netherite_ingot"]
+
+    "Swift_Sneak":
+      custopontos: [4, 6, 8]
+      custoitem: ["32 leather", "32 white_wool", "32 phantom_membrane"]
+
+    "Wind_Burst":
+      custopontos: [6, 8, 12]
+      custoitem: ["64 firework_rocket", "64 wind_charge", "1 barrier"]
+
+    Breach:
+      custopontos: [4, 6, 8]
+      custoitem: ["64 cracked_stone_bricks", "64 smooth_basalt", "64 blackstone"]
+
+    Density:
+      custopontos: [4, 6, 8, 12, 14]
+      custoitem: ["1 anvil", "8 anvil", "16 anvil", "64 gold_block", "1 netherite_ingot"]
+
+    Desabar:
+      custopontos: [12]
+      custoitem: ["1 stone"]

@@ -1,0 +1,15 @@
+name: SSGItemEvolution
+version: 1.0.0
+main: com.ssg.itemevolution.ItemEvolutionPlugin
+api-version: 1.21
+author: SSG
+description: Sistema de evolução de itens com encantamentos customizados
+
+softdepend:
+  - Nexo
+
+commands:
+  ssgitemevolution:
+    description: Comando principal para o sistema de evolução de itens
+    usage: /ssgitemevolution <subcomando>
+    aliases: [ssgievo, evo]
