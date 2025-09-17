@@ -153,34 +153,34 @@ object EnchantmentHandler {
         return result
     }
 
-    fun getMultipleCustomEnchantmentLevels(item: ItemStack, enchantNames: List<String>): Map<String, Int> {
-        val meta = item.itemMeta ?: return emptyMap()
-        val container = meta.persistentDataContainer
-
-        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING) ?: return emptyMap()
-        val levels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING) ?: return emptyMap()
-
-        val enchantmentList = enchantments.split(",")
-        val levelList = levels.split(",")
-
-        val result = mutableMapOf<String, Int>()
-
-        // Criar um mapa de índices para busca O(1)
-        val indexMap = enchantmentList.mapIndexed { index, name -> name to index }.toMap()
-
-        enchantNames.forEach { enchantName ->
-            indexMap[enchantName]?.let { index ->
-                if (index < levelList.size) {
-                    val level = levelList[index].toIntOrNull() ?: 0
-                    if (level > 0) {
-                        result[enchantName] = level
-                    }
-                }
-            }
-        }
-
-        return result
-    }
+//    fun getMultipleCustomEnchantmentLevels(item: ItemStack, enchantNames: List<String>): Map<String, Int> {
+//        val meta = item.itemMeta ?: return emptyMap()
+//        val container = meta.persistentDataContainer
+//
+//        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING) ?: return emptyMap()
+//        val levels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING) ?: return emptyMap()
+//
+//        val enchantmentList = enchantments.split(",")
+//        val levelList = levels.split(",")
+//
+//        val result = mutableMapOf<String, Int>()
+//
+//        // Criar um mapa de índices para busca O(1)
+//        val indexMap = enchantmentList.mapIndexed { index, name -> name to index }.toMap()
+//
+//        enchantNames.forEach { enchantName ->
+//            indexMap[enchantName]?.let { index ->
+//                if (index < levelList.size) {
+//                    val level = levelList[index].toIntOrNull() ?: 0
+//                    if (level > 0) {
+//                        result[enchantName] = level
+//                    }
+//                }
+//            }
+//        }
+//
+//        return result
+//    }
 
     fun quickHasCustomEnchantment(item: ItemStack, enchantName: String): Boolean {
         val meta = item.itemMeta ?: return false

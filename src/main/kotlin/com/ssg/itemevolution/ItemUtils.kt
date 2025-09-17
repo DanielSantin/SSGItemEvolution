@@ -1,5 +1,6 @@
 package com.ssg.itemevolution
 
+import net.kyori.adventure.text.Component
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.Damageable
@@ -136,9 +137,9 @@ object ItemUtils {
 
             if (oldMeta.hasCustomModelData()) { meta.setCustomModelData(oldMeta.customModelData) }
 
-            meta.setUnbreakable(oldMeta.isUnbreakable)
+            meta.isUnbreakable = oldMeta.isUnbreakable
             meta.addItemFlags(*oldMeta.itemFlags.toTypedArray())
-            oldMeta.attributeModifiers?.let { meta.setAttributeModifiers(it) }
+            oldMeta.attributeModifiers?.let { meta.attributeModifiers = it }
         }
 
         // Reset para level 1 (sobrescrever apenas estes valores específicos)
@@ -214,28 +215,29 @@ object ItemUtils {
         val meta = item.itemMeta ?: return
         val container = meta.persistentDataContainer
 
-        val lore = mutableListOf<String>()
+        // Criar a lista de lore como Component
+        val lore = mutableListOf<Component>()
 
         // Enchantments customizados
         val customEnchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: emptyList()
         val customLevels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING)?.split(",") ?: emptyList()
-        val displayFlags = container.get(customEnchantmentDisplayKey, PersistentDataType.STRING)?.split(",")?: emptyList()
+        val displayFlags = container.get(customEnchantmentDisplayKey, PersistentDataType.STRING)?.split(",") ?: emptyList()
 
         for (i in customEnchantments.indices) {
             if (i < customLevels.size) {
                 if (displayFlags[i].toBooleanStrictOrNull() == false) continue
                 val enchantName = customEnchantments[i]
                 val level = customLevels[i].toIntOrNull() ?: 1
-                lore.add("§7$enchantName ${toRoman(level)}")
+                lore.add(Component.text("§7$enchantName ${toRoman(level)}"))
             }
         }
 
         // Separador
-        lore.add("§7----------------------")
+        lore.add(Component.text("§7----------------------"))
 
         // Estatísticas
         val uses = container.get(usesKey, PersistentDataType.INTEGER) ?: 0
-        lore.add("§7Usos: $uses")
+        lore.add(Component.text("§7Usos: $uses"))
 
         val encValue = container.get(encKey, PersistentDataType.INTEGER) ?: 0
         if (encValue != 1) {
@@ -247,18 +249,19 @@ object ItemUtils {
             val isArmor = ToolCategory.isArmor(ToolCategory.fromMaterial(item.type))
             val mult = if (isArmor) 0.25 else 1.0
 
-            val before = ceil(((durability * mult).pow(3) * (level - 1).toDouble().pow(4)).pow(1.0/3.0)).toInt()
-            val nextLvl = ceil(((durability * mult).pow(3) * level.toDouble().pow(4)).pow(1.0/3.0) - before).toInt()
+            val before = ceil(((durability * mult).pow(3) * (level - 1).toDouble().pow(4)).pow(1.0 / 3.0)).toInt()
+            val nextLvl = ceil(((durability * mult).pow(3) * level.toDouble().pow(4)).pow(1.0 / 3.0) - before).toInt()
             val toNext = counter - before
 
-            lore.add("§7Lvl: $level")
-            lore.add("§7Pontos: $points")
-            lore.add("§7NextLvl: $toNext/$nextLvl")
+            lore.add(Component.text("§7Lvl: $level"))
+            lore.add(Component.text("§7Pontos: $points"))
+            lore.add(Component.text("§7NextLvl: $toNext/$nextLvl"))
         }
 
-        lore.add("§7----------------------")
+        lore.add(Component.text("§7----------------------"))
 
-        meta.lore = lore
+        // Definir a lore usando Adventure Components
+        meta.lore(lore)
         item.itemMeta = meta
     }
 
