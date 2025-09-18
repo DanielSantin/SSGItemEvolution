@@ -41,27 +41,6 @@ object EnchantmentHandler {
     }
 
 
-//    /**
-//     * Aplica um encantamento ao item - pode ser vanilla (real) ou fake (apenas visual)
-//     */
-//    fun applyEnchantment(item: ItemStack, enchantName: String, level: Int): ItemStack {
-//        val newItem = item.clone()
-//
-//        // Verificar se é um encantamento vanilla
-//        val vanillaEnchant = getVanillaEnchantment(enchantName)
-//
-//        if (vanillaEnchant != null) {
-//            // Aplicar encantamento vanilla real
-//            applyVanillaEnchantment(newItem, vanillaEnchant, level)
-//        } else {
-//            // Aplicar encantamento fake (apenas visual)
-//            applyFakeEnchantment(newItem, enchantName, level)
-//        }
-//
-//        return newItem
-//    }
-
-
     /**
      * Adiciona encantamento à lista customizada (para lore)
      */
