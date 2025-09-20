@@ -11,40 +11,10 @@ object EnchantmentHandler {
     private val customEnchantmentLevelsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_lvl")
     private val customEnchantmentDisplayKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_display")
 
-    fun upgradeEnchantment(item: ItemStack, enchantName: String, maxLevel: Int? = null): ItemStack {
-        val newItem = item.clone()
-        val vanillaEnchant = getVanillaEnchantment(enchantName)
-
-        if (vanillaEnchant != null) {
-            // Verifica o nível atual
-            val currentLevel = newItem.getEnchantmentLevel(vanillaEnchant)
-            val newLevel = if (currentLevel > 0) currentLevel + 1 else 1
-
-            // Respeitar o limite se informado
-            val finalLevel = if (maxLevel != null) newLevel.coerceAtMost(maxLevel) else newLevel
-
-            // Aplicar upgrade
-            newItem.addUnsafeEnchantment(vanillaEnchant, finalLevel)
-            addToCustomEnchantmentList(newItem, enchantName, finalLevel, displayEnchantment = false)
-        } else {
-            // Para encantamento fake
-            val customEnchantments = getCustomEnchantments(newItem)
-            val currentLevel = customEnchantments[enchantName] ?: 0
-            val newLevel = if (currentLevel > 0) currentLevel + 1 else 1
-
-            val finalLevel = if (maxLevel != null) newLevel.coerceAtMost(maxLevel) else newLevel
-
-            addToCustomEnchantmentList(newItem, enchantName, finalLevel)
-        }
-
-        return newItem
-    }
-
-
     /**
      * Adiciona encantamento à lista customizada (para lore)
      */
-    private fun addToCustomEnchantmentList(item: ItemStack, enchantName: String, level: Int, displayEnchantment: Boolean = true) {
+    fun addToCustomEnchantmentList(item: ItemStack, enchantName: String, level: Int, displayEnchantment: Boolean = true) {
         val meta = item.itemMeta ?: return
         val container = meta.persistentDataContainer
 
@@ -74,7 +44,7 @@ object EnchantmentHandler {
     /**
      * Converte nome de encantamento para encantamento vanilla do Bukkit
      */
-    private fun getVanillaEnchantment(enchantName: String): Enchantment? {
+    fun getVanillaEnchantment(enchantName: String): Enchantment? {
         return when (enchantName.lowercase()) {
             "efficiency", "eficiência" -> Enchantment.EFFICIENCY
             "fortune", "fortuna" -> Enchantment.FORTUNE
@@ -111,50 +81,22 @@ object EnchantmentHandler {
     }
 
 
-    /**
-     * Obtém todos os encantamentos customizados de um item
-     */
-    fun getCustomEnchantments(item: ItemStack): Map<String, Int> {
-        val meta = item.itemMeta ?: return emptyMap()
-        val container = meta.persistentDataContainer
 
-        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: return emptyMap()
-        val levels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING)?.split(",") ?: return emptyMap()
-
-        val result = mutableMapOf<String, Int>()
-        for (i in enchantments.indices) {
-            if (i < levels.size) {
-                val level = levels[i].toIntOrNull() ?: 1
-                result[enchantments[i]] = level
-            }
-        }
-
-        return result
-    }
-
-//    fun getMultipleCustomEnchantmentLevels(item: ItemStack, enchantNames: List<String>): Map<String, Int> {
+//    /**
+//     * Obtém todos os encantamentos customizados de um item
+//     */
+//    fun getCustomEnchantments(item: ItemStack): Map<String, Int> {
 //        val meta = item.itemMeta ?: return emptyMap()
 //        val container = meta.persistentDataContainer
 //
-//        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING) ?: return emptyMap()
-//        val levels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING) ?: return emptyMap()
-//
-//        val enchantmentList = enchantments.split(",")
-//        val levelList = levels.split(",")
+//        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: return emptyMap()
+//        val levels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING)?.split(",") ?: return emptyMap()
 //
 //        val result = mutableMapOf<String, Int>()
-//
-//        // Criar um mapa de índices para busca O(1)
-//        val indexMap = enchantmentList.mapIndexed { index, name -> name to index }.toMap()
-//
-//        enchantNames.forEach { enchantName ->
-//            indexMap[enchantName]?.let { index ->
-//                if (index < levelList.size) {
-//                    val level = levelList[index].toIntOrNull() ?: 0
-//                    if (level > 0) {
-//                        result[enchantName] = level
-//                    }
-//                }
+//        for (i in enchantments.indices) {
+//            if (i < levels.size) {
+//                val level = levels[i].toIntOrNull() ?: 1
+//                result[enchantments[i]] = level
 //            }
 //        }
 //
@@ -186,5 +128,26 @@ object EnchantmentHandler {
         } else {
             0
         }
+    }
+
+    fun getEnchantmentLevel(item: ItemStack, enchantName: String): Int {
+        val vanillaEnchant = getVanillaEnchantment(enchantName)
+        if (vanillaEnchant != null) {
+            return item.getEnchantmentLevel(vanillaEnchant)
+        } else {
+            return getCustomEnchantmentLevel(item, enchantName)
+        }
+    }
+
+    fun enchantItem(item: ItemStack, enchantName: String, level: Int): ItemStack {
+        val newItem = item.clone()
+        val vanillaEnchant = getVanillaEnchantment(enchantName)
+        if (vanillaEnchant != null) {
+            newItem.addUnsafeEnchantment(vanillaEnchant, level)
+            //addToCustomEnchantmentList(newItem, enchantName, level, displayEnchantment = false)
+        } else {
+            addToCustomEnchantmentList(newItem, enchantName, level)
+        }
+        return newItem
     }
 }

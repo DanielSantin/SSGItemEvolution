@@ -1,27 +1,28 @@
 package com.ssg.itemevolution
 
 import com.nexomc.nexo.api.NexoItems
+import com.ssg.itemevolution.EnchantmentHandler.getEnchantmentLevel
+import io.papermc.paper.registry.RegistryAccess
+import io.papermc.paper.registry.RegistryKey
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.MerchantRecipe
-import org.bukkit.inventory.meta.BannerMeta
 import org.bukkit.inventory.meta.Damageable
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.NamespacedKey
-import org.bukkit.DyeColor
-import org.bukkit.block.banner.Pattern
-import org.bukkit.block.banner.PatternType
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.meta.EnchantmentStorageMeta
 
 object MerchantHandler {
 
-    private val toolItemKey = NamespacedKey(ItemEvolutionPlugin.instance, "tool_item")
+    private val pluginInstance = ItemEvolutionPlugin.instance
+    private val toolItemKey = NamespacedKey(pluginInstance, "tool_item")
 
     fun openMerchant(player: Player, tool: ItemStack) {
         if (!ItemUtils.isValidTool(tool)) {
@@ -75,13 +76,6 @@ object MerchantHandler {
         val merchant = Bukkit.createMerchant(Component.text(title))
         merchant.recipes = trades
 
-        // Salvar o item original nos metadados do jogador
-        //val meta = player.itemMeta ?: player.persistentDataContainer
-        //meta.set(toolItemKey, PersistentDataType.STRING, serializeItemStack(tool))
-
-        // Remover o item do inventário temporariamente
-        //player.inventory.removeItem(tool)
-
         player.openMerchant(merchant, true)
         player.playSound(player.location, Sound.ITEM_ARMOR_EQUIP_LEATHER, 1.0f, 2.0f)
     }
@@ -103,15 +97,15 @@ object MerchantHandler {
             val costPoints = enchantSection.getIntegerList("custopontos")
             val costItems = enchantSection.getStringList("custoitem")
 
-            val currentLevel = getCurrentEnchantmentLevel(tool, enchantName)
+            val currentLevel = getEnchantmentLevel(tool, enchantName)
             val nextLevel = currentLevel + 1
 
             if (nextLevel > costPoints.size) continue // Nível máximo atingido
 
-            val requiredPoints = costPoints.getOrNull(nextLevel - 1) ?: continue
+            val requiredPoints = costPoints.getOrNull(currentLevel) ?: continue
             val currentPoints = getCurrentPoints(tool)
 
-            val rawCostString = costItems.getOrNull(nextLevel - 1) ?: continue
+            val rawCostString = costItems.getOrNull(currentLevel) ?: continue
             val trimmed = rawCostString.trim()
 
             val qtyRegex = Regex("^([0-9]+)x?\\s+(.+)$")
@@ -125,7 +119,7 @@ object MerchantHandler {
                 try {
                     val itemBuilder = NexoItems.itemFromId(itemId)
                     if (itemBuilder == null) {
-                        Bukkit.getLogger().warning("ID do Nexo inválido: $itemId")
+                        pluginInstance.logger.warning("ID do Nexo inválido: $itemId")
                         continue
                     }
                     val itemStack = itemBuilder.build()
@@ -133,7 +127,7 @@ object MerchantHandler {
                     itemStack.amount = quantity.coerceAtLeast(1).coerceAtMost(itemStack.maxStackSize)
                     itemStack
                 } catch (e: Exception) {
-                    Bukkit.getLogger().warning("Erro ao criar item Nexo ($itemId): ${e.message}")
+                    pluginInstance.logger.warning("Erro ao criar item Nexo ($itemId): ${e.message}")
                     continue
                 }
             } else {
@@ -142,21 +136,22 @@ object MerchantHandler {
             }
 
             if (requiredPoints > currentPoints) {
-                // Adiciona efeito de brilho
                 cost.addUnsafeEnchantment(Enchantment.UNBREAKING, 10)
 
-                // Define a lore avisando que os pontos são insuficientes
                 val meta = cost.itemMeta
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
 
-                meta?.lore = listOf("§cPontos insuficientes: $currentPoints/$requiredPoints")
+                meta.lore(listOf(
+                    Component.text("Pontos insuficientes: $currentPoints/$requiredPoints")
+                        .color(NamedTextColor.RED)
+                ))
 
                 cost.itemMeta = meta
             }
 
 
             // ✅ Upgrade seguro com limite máximo
-            val enchantedTool = EnchantmentHandler.upgradeEnchantment(tool, enchantName, maxLevel = costPoints.size)
+            val enchantedTool = EnchantmentHandler.enchantItem(tool, enchantName, nextLevel)
 
             // ✅ Reduz pontos somente se realmente aplicou upgrade
             //if (requiredPoints <= currentPoints) {
@@ -173,20 +168,20 @@ object MerchantHandler {
     }
 
 
-    private fun getCurrentEnchantmentLevel(tool: ItemStack, enchantName: String): Int {
-        val meta = tool.itemMeta ?: return 0
-        val container = meta.persistentDataContainer
-        val customEnchantmentsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc")
-        val customLevelsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_lvl")
-
-        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: return 0
-        val levels = container.get(customLevelsKey, PersistentDataType.STRING)?.split(",") ?: return 0
-
-        val index = enchantments.indexOf(enchantName)
-        return if (index >= 0 && index < levels.size) {
-            levels[index].toIntOrNull() ?: 0
-        } else 0
-    }
+//    private fun getCurrentEnchantmentLevel(tool: ItemStack, enchantName: String): Int {
+//        val meta = tool.itemMeta ?: return 0
+//        val container = meta.persistentDataContainer
+//        val customEnchantmentsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc")
+//        val customLevelsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_lvl")
+//
+//        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: return 0
+//        val levels = container.get(customLevelsKey, PersistentDataType.STRING)?.split(",") ?: return 0
+//
+//        val index = enchantments.indexOf(enchantName)
+//        return if (index >= 0 && index < levels.size) {
+//            levels[index].toIntOrNull() ?: 0
+//        } else 0
+//    }
 
     private fun getCurrentPoints(tool: ItemStack): Int {
         val meta = tool.itemMeta ?: return 0
@@ -218,9 +213,12 @@ object MerchantHandler {
             val level = parts[3].toIntOrNull() ?: 1
             val meta = item.itemMeta as EnchantmentStorageMeta
 
-            // Tenta obter o encantamento vanilla pelo NamespacedKey
             val key = NamespacedKey.minecraft(enchantName)
-            val enchant = Enchantment.getByKey(key)
+
+            // Usando o novo sistema de Registry do Paper
+            val enchant = RegistryAccess.registryAccess()
+                .getRegistry(RegistryKey.ENCHANTMENT)
+                .get(key)
 
             if (enchant != null) {
                 meta.addStoredEnchant(enchant, level, true)
