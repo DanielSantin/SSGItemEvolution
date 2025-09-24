@@ -318,4 +318,30 @@ object ItemUtils {
             else -> null
         }
     }
+
+    fun getMaterialQuantity(material: Material): Int {
+        return when (ToolCategory.fromMaterial(material)) {
+            ToolCategory.SWORD -> 2
+            ToolCategory.PICKAXE -> 3
+            ToolCategory.AXE -> 3
+            ToolCategory.SHOVEL -> 1
+            ToolCategory.HOE -> 1
+            ToolCategory.HELMET -> 5
+            ToolCategory.CHESTPLATE -> 8
+            ToolCategory.LEGGINGS -> 7
+            ToolCategory.BOOTS -> 4
+            ToolCategory.BOW -> 2
+            ToolCategory.SHIELD -> 2
+            ToolCategory.CROSSBOW -> 2
+            else -> 1
+        }
+    }
+
+    fun getUpgradeItemstack(item: ItemStack): ItemStack? {
+        val upgradeMaterial = getUpgradeMaterial(item) ?: return null
+        val upgradeAmount = getMaterialQuantity(upgradeMaterial)
+        if (upgradeMaterial == Material.NETHERITE_INGOT) return ItemStack(Material.NETHERITE_INGOT, 1)
+        return ItemStack(upgradeMaterial, upgradeAmount)
+    }
+
 }

@@ -2,6 +2,7 @@ package com.ssg.itemevolution
 
 import com.nexomc.nexo.api.NexoItems
 import com.ssg.itemevolution.EnchantmentHandler.getEnchantmentLevel
+import com.ssg.itemevolution.ItemUtils.getUpgradeItemstack
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
 import net.kyori.adventure.text.Component
@@ -33,15 +34,12 @@ object MerchantHandler {
         val trades = mutableListOf<MerchantRecipe>()
 
         // Trade de upgrade
-        val upgradeMaterial = ItemUtils.getUpgradeMaterial(tool)
-        if (upgradeMaterial != null) {
-            val quantity = MaterialQuantity.getMaterialQuantity(tool.type)
-            val upgradeItems = ItemStack(upgradeMaterial, quantity)
+        val upgradeItemStack = getUpgradeItemstack(tool)
+        if (upgradeItemStack != null) {
             val upgradedTool = ItemUtils.improveItem(tool)
-
             val upgradeRecipe = MerchantRecipe(upgradedTool, 999)
             upgradeRecipe.addIngredient(tool)
-            upgradeRecipe.addIngredient(upgradeItems)
+            upgradeRecipe.addIngredient(upgradeItemStack)
             trades.add(upgradeRecipe)
         }
 

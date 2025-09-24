@@ -86,22 +86,3 @@ enum class ToolCategory {
     }
 }
 
-object MaterialQuantity {
-    fun getMaterialQuantity(material: Material): Int {
-        return when (ToolCategory.fromMaterial(material)) {
-            ToolCategory.SWORD -> 2
-            ToolCategory.PICKAXE -> 3
-            ToolCategory.AXE -> 3
-            ToolCategory.SHOVEL -> 1
-            ToolCategory.HOE -> 1
-            ToolCategory.HELMET -> 5
-            ToolCategory.CHESTPLATE -> 8
-            ToolCategory.LEGGINGS -> 7
-            ToolCategory.BOOTS -> 4
-            ToolCategory.BOW -> 2
-            ToolCategory.SHIELD -> 2
-            ToolCategory.CROSSBOW -> 2
-            else -> 1
-        }
-    }
-}
