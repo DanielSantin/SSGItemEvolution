@@ -1,10 +1,8 @@
 package com.ssg.itemevolution.enchantments.listeners
 
 import com.ssg.itemevolution.EnchantmentHandler
-import com.ssg.itemevolution.ItemEvolutionPlugin
-import com.ssg.itemevolution.enchantments.CustomEnchantmentRegistry
+import com.ssg.itemevolution.enchantments.EnchantmentRegistry
 import com.ssg.itemevolution.enchantments.mining.DesabarEnchantment
-import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
@@ -17,9 +15,9 @@ class MiningEnchantmentListener : Listener {
         val block = event.block
         val tool = player.inventory.itemInMainHand
 
-        // Verificar se tem o encantamento Desabar
-        if (EnchantmentHandler.quickHasCustomEnchantment(tool, CustomEnchantmentRegistry.DESABAR)) {
-            val level = EnchantmentHandler.getCustomEnchantmentLevel(tool, CustomEnchantmentRegistry.DESABAR)
+        // Verificar se tem o encantamento Desabar (usando o novo sistema)
+        if (EnchantmentHandler.hasEnchantment(tool, EnchantmentRegistry.DESABAR)) {
+            val level = EnchantmentHandler.getEnchantmentLevel(tool, EnchantmentRegistry.DESABAR)
 
             if (level > 0) {
                 if (player.isSneaking) {
@@ -38,6 +36,25 @@ class MiningEnchantmentListener : Listener {
                 }
             }
         }
+
+        // Verificar outros encantamentos de mineração
+        checkEscavarVeia(event, tool)
+        checkQuebraArea(event, tool)
     }
 
+    private fun checkEscavarVeia(event: BlockBreakEvent, tool: org.bukkit.inventory.ItemStack) {
+        if (EnchantmentHandler.hasEnchantment(tool, EnchantmentRegistry.ESCAVAR_VEIA)) {
+            EnchantmentHandler.getEnchantmentLevel(tool, EnchantmentRegistry.ESCAVAR_VEIA)
+            // Implementar lógica do Escavar Veia aqui
+            // TODO: Implementar ação do encantamento
+        }
+    }
+
+    private fun checkQuebraArea(event: BlockBreakEvent, tool: org.bukkit.inventory.ItemStack) {
+        if (EnchantmentHandler.hasEnchantment(tool, EnchantmentRegistry.QUEBRA_AREA)) {
+            EnchantmentHandler.getEnchantmentLevel(tool, EnchantmentRegistry.QUEBRA_AREA)
+            // Implementar lógica do Quebra Área aqui
+            // TODO: Implementar ação do encantamento
+        }
+    }
 }

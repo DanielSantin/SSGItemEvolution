@@ -160,7 +160,7 @@ class CommandHandler(private val plugin: ItemEvolutionPlugin) : CommandExecutor,
         container.set(customLevelsKey, PersistentDataType.STRING, levels.joinToString(","))
 
         tool.itemMeta = meta
-        ItemUtils.updateLore(tool)
+//        ItemUtils.updateLore(tool)
 
         player.sendMessage("§aEncantamento customizado §e$enchantName $level §aaplicado com sucesso!")
     }
@@ -223,7 +223,7 @@ class CommandHandler(private val plugin: ItemEvolutionPlugin) : CommandExecutor,
 
         container.set(levelKey, PersistentDataType.INTEGER, level)
         tool.itemMeta = meta
-        ItemUtils.updateLore(tool)
+//        ItemUtils.updateLore(tool)
 
         player.sendMessage("§aNível da ferramenta definido para §e$level§a!")
     }
@@ -257,8 +257,8 @@ class CommandHandler(private val plugin: ItemEvolutionPlugin) : CommandExecutor,
 
         container.set(usosKey, PersistentDataType.INTEGER, usos)
         tool.itemMeta = meta
-        ItemUtils.updateLore(tool)
-
+//        ItemUtils.updateLore(tool)
+//
         player.sendMessage("§aUsos da ferramenta definidos para §e$usos§a!")
     }
 
@@ -291,7 +291,7 @@ class CommandHandler(private val plugin: ItemEvolutionPlugin) : CommandExecutor,
 
         container.set(pontosKey, PersistentDataType.INTEGER, pontos)
         tool.itemMeta = meta
-        ItemUtils.updateLore(tool)
+//        ItemUtils.updateLore(tool)
 
         player.sendMessage("§aPontos da ferramenta definidos para §e$pontos§a!")
     }

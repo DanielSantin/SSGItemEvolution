@@ -3,7 +3,6 @@ package com.ssg.itemevolution.dialogs
 import com.ssg.itemevolution.EvolutionKey
 import com.ssg.itemevolution.ItemEvolutionPlugin
 import com.ssg.itemevolution.ItemUtils
-import com.ssg.itemevolution.ItemUtils.hasVanillaEnchantments
 import com.ssg.itemevolution.ItemUtils.setupItem
 import net.kyori.adventure.text.Component
 import org.bukkit.inventory.ItemStack
@@ -16,7 +15,7 @@ object SoulToolUtils {
         VALID(null),
         ALREADY_SOUL(Component.text("§cEsta ferramenta já possui uma alma!")),
         INVALID_TOOL(Component.text("§cEste item não pode ser transformado.")),
-        HAS_ENCHANT(Component.text("§cRemova os encantamentos vanilla antes de transformar."))
+        HAS_ENCHANT(Component.text("§cRemova os encantamentos antes de transformar."))
     }
 
     // === Verificações e Validações ===
@@ -39,7 +38,10 @@ object SoulToolUtils {
         if (tool == null) return SoulToolCheckResult.INVALID_TOOL
         if (!ItemUtils.isValidTool(tool)) return SoulToolCheckResult.INVALID_TOOL
         if (hasSoul(tool)) return SoulToolCheckResult.ALREADY_SOUL
-        if (hasVanillaEnchantments(tool)) return SoulToolCheckResult.HAS_ENCHANT
+
+        // Verifica se tem qualquer encantamento (vanilla ou data-driven)
+        if (tool.enchantments.isNotEmpty()) return SoulToolCheckResult.HAS_ENCHANT
+
         return SoulToolCheckResult.VALID
     }
 
@@ -61,8 +63,7 @@ object SoulToolUtils {
             addSoulToTool(toolCopy)
             setupItem(toolCopy)
 
-            // Atualiza o lore
-            ItemUtils.updateLore(toolCopy)
+            // Copia os dados de volta para o item original
             tool.itemMeta = toolCopy.itemMeta
             true
         } catch (e: Exception) {

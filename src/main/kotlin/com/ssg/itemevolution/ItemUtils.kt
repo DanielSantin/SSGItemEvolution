@@ -66,7 +66,6 @@ object ItemUtils {
         container.set(EvolutionKey.LEVEL.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 1)
         container.set(EvolutionKey.POINTS.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 0)
         item.itemMeta = meta
-        updateLore(item)
         return item
     }
 
@@ -99,12 +98,8 @@ object ItemUtils {
         }
 
         item.itemMeta = meta
-        updateLore(item)
         return item
     }
-
-
-
 
     fun improveItem(item: ItemStack): ItemStack {
         ToolType.fromMaterial(item.type) ?: return item
@@ -121,67 +116,52 @@ object ItemUtils {
         if (oldMeta != null) {
             val oldContainer = oldMeta.persistentDataContainer
 
-            // ✅ CORREÇÃO: Copiar TODOS os dados persistentes, incluindo encantamentos customizados
-            copyAllPersistentData(oldContainer, container)
+            // Copiar dados persistentes (sem incluir encantamentos customizados antigos)
+            copyEvolutionData(oldContainer, container)
 
-            // Copiar outros dados do meta (display name, lore customizado, etc.)
+            // Copiar outros dados do meta (display name, etc.)
             meta.displayName(oldMeta.displayName())
-            // ❌ NÃO copiar lore antigo - será recriado pelo updateLore()
-            // meta.lore(oldMeta.lore())
 
-            if (oldMeta.hasCustomModelData()) { meta.setCustomModelData(oldMeta.customModelData) }
+            if (oldMeta.hasCustomModelData()) {
+                meta.setCustomModelData(oldMeta.customModelData)
+            }
 
             meta.isUnbreakable = oldMeta.isUnbreakable
             meta.addItemFlags(*oldMeta.itemFlags.toTypedArray())
             oldMeta.attributeModifiers?.let { meta.attributeModifiers = it }
         }
 
-        // Reset para level 1 (sobrescrever apenas estes valores específicos)
+        // Reset para level 1
         container.set(EvolutionKey.COUNTER.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 1)
         container.set(EvolutionKey.LEVEL.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 1)
 
-        // Definir o meta ANTES de copiar encantamentos vanilla
+        // Definir o meta ANTES de copiar encantamentos
         newItem.itemMeta = meta
 
-        // DEPOIS copiar encantamentos vanilla
-        if (hasVanillaEnchantments(item)) {
+        // Copiar todos os encantamentos (vanilla e data-driven)
+        if (item.enchantments.isNotEmpty()) {
             newItem.addUnsafeEnchantments(item.enchantments)
         }
 
-        updateLore(newItem)
         return newItem
     }
 
     /**
-     * Copia TODOS os dados persistentes de um container para outro
+     * Copia apenas os dados de evolução necessários
      */
-    private fun copyAllPersistentData(source: PersistentDataContainer, target: PersistentDataContainer) {
-        for (key in source.keys) {
-            when {
-                source.has(key, PersistentDataType.STRING) -> {
-                    val value = source.get(key, PersistentDataType.STRING)
-                    if (value != null) target.set(key, PersistentDataType.STRING, value)
-                }
-                source.has(key, PersistentDataType.INTEGER) -> {
-                    val value = source.get(key, PersistentDataType.INTEGER)
-                    if (value != null) target.set(key, PersistentDataType.INTEGER, value)
-                }
-                source.has(key, PersistentDataType.DOUBLE) -> {
-                    val value = source.get(key, PersistentDataType.DOUBLE)
-                    if (value != null) target.set(key, PersistentDataType.DOUBLE, value)
-                }
-                source.has(key, PersistentDataType.LONG) -> {
-                    val value = source.get(key, PersistentDataType.LONG)
-                    if (value != null) target.set(key, PersistentDataType.LONG, value)
-                }
-                source.has(key, PersistentDataType.BYTE) -> {
-                    val value = source.get(key, PersistentDataType.BYTE)
-                    if (value != null) target.set(key, PersistentDataType.BYTE, value)
-                }
-                source.has(key, PersistentDataType.FLOAT) -> {
-                    val value = source.get(key, PersistentDataType.FLOAT)
-                    if (value != null) target.set(key, PersistentDataType.FLOAT, value)
-                }
+    private fun copyEvolutionData(source: PersistentDataContainer, target: PersistentDataContainer) {
+        val evolutionKeys = listOf(
+            EvolutionKey.USES,
+            EvolutionKey.COUNTER,
+            EvolutionKey.LEVEL,
+            EvolutionKey.POINTS
+        )
+
+        for (evolutionKey in evolutionKeys) {
+            val key = evolutionKey.key(ItemEvolutionPlugin.instance)
+            val value = source.get(key, PersistentDataType.INTEGER)
+            if (value != null) {
+                target.set(key, PersistentDataType.INTEGER, value)
             }
         }
     }
@@ -205,36 +185,28 @@ object ItemUtils {
         return toolType.materials.find { ToolCategory.fromMaterial(it) == category }
     }
 
-    fun updateLore(item: ItemStack) {
-        val meta = item.itemMeta ?: return
+    /**
+     * Retorna a descrição do item (anteriormente era updateLore)
+     * Para ser usado em futuras GUIs
+     */
+    fun getDescription(item: ItemStack): List<Component> {
+        val meta = item.itemMeta ?: return emptyList()
         val container = meta.persistentDataContainer
 
-        // Criar a lista de lore como Component
-        val lore = mutableListOf<Component>()
+        val description = mutableListOf<Component>()
 
-        // Enchantments customizados
-        val customEnchantments = container.get(EvolutionKey.CUSTOM_ENCHANTS.key(ItemEvolutionPlugin.instance)
-            , PersistentDataType.STRING)?.split(",") ?: emptyList()
-        val customLevels = container.get(EvolutionKey.CUSTOM_ENCHANT_LEVELS.key(ItemEvolutionPlugin.instance)
-            , PersistentDataType.STRING)?.split(",") ?: emptyList()
-        val displayFlags = container.get(EvolutionKey.CUSTOM_ENCHANT_DISPLAY.key(ItemEvolutionPlugin.instance)
-            , PersistentDataType.STRING)?.split(",") ?: emptyList()
-
-        for (i in customEnchantments.indices) {
-            if (i < customLevels.size) {
-                if (displayFlags[i].toBooleanStrictOrNull() == false) continue
-                val enchantName = customEnchantments[i]
-                val level = customLevels[i].toIntOrNull() ?: 1
-                lore.add(Component.text("§7$enchantName ${toRoman(level)}"))
+        // Listar encantamentos do item
+        val enchantments = item.enchantments
+        if (enchantments.isNotEmpty()) {
+            for ((enchantment, level) in enchantments) {
+                val enchantName = enchantment.key.key.replaceFirstChar { it.uppercase() }
+                description.add(Component.text("§7$enchantName ${toRoman(level)}"))
             }
+            description.add(Component.text("§7----------------------"))
         }
 
-        // Separador
-        lore.add(Component.text("§7----------------------"))
-
-        // Estatísticas
+        // Estatísticas de evolução
         val uses = container.get(EvolutionKey.USES.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 0
-
         val level = container.get(EvolutionKey.LEVEL.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 1
         val points = container.get(EvolutionKey.POINTS.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 0
         val counter = container.get(EvolutionKey.COUNTER.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 1
@@ -247,16 +219,13 @@ object ItemUtils {
         val nextLvl = ceil(((durability * mult).pow(3) * level.toDouble().pow(4)).pow(1.0 / 3.0) - before).toInt()
         val toNext = counter - before
 
-        lore.add(Component.text("§7Usos: $uses"))
-        lore.add(Component.text("§7Lvl: $level"))
-        lore.add(Component.text("§7Pontos: $points"))
-        lore.add(Component.text("§7NextLvl: $toNext/$nextLvl"))
+        description.add(Component.text("§7Usos: $uses"))
+        description.add(Component.text("§7Lvl: $level"))
+        description.add(Component.text("§7Pontos: $points"))
+        description.add(Component.text("§7NextLvl: $toNext/$nextLvl"))
+        description.add(Component.text("§7----------------------"))
 
-        lore.add(Component.text("§7----------------------"))
-
-        // Definir a lore usando Adventure Components
-        meta.lore(lore)
-        item.itemMeta = meta
+        return description
     }
 
     private fun toRoman(number: Int): String {
@@ -337,9 +306,4 @@ object ItemUtils {
         if (upgradeMaterial == Material.NETHERITE_INGOT) return ItemStack(Material.NETHERITE_INGOT, 1)
         return ItemStack(upgradeMaterial, upgradeAmount)
     }
-
-    fun hasVanillaEnchantments(item: ItemStack): Boolean {
-        return item.enchantments.isNotEmpty()
-    }
-
 }

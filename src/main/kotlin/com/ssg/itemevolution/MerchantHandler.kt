@@ -62,8 +62,8 @@ object MerchantHandler {
             }
         }
 
-        // Trades de encantamentos customizados
-        addCustomEnchantmentTrades(tool, trades)
+        // Trades de encantamentos
+        addEnchantmentTrades(tool, trades)
 
         if (trades.isEmpty()) {
             player.sendMessage("§4[SSG] §2Nenhuma melhoria disponível para este item")
@@ -78,7 +78,7 @@ object MerchantHandler {
         player.playSound(player.location, Sound.ITEM_ARMOR_EQUIP_LEATHER, 1.0f, 2.0f)
     }
 
-    private fun addCustomEnchantmentTrades(tool: ItemStack, trades: MutableList<MerchantRecipe>) {
+    private fun addEnchantmentTrades(tool: ItemStack, trades: MutableList<MerchantRecipe>) {
         val config = ItemEvolutionPlugin.evolutionsConfig ?: return
         val toolType = ItemUtils.testTool(tool)
 
@@ -121,7 +121,6 @@ object MerchantHandler {
                         continue
                     }
                     val itemStack = itemBuilder.build()
-                    // Ajusta a quantidade, evitando exceder o max stack
                     itemStack.amount = quantity.coerceAtLeast(1).coerceAtMost(itemStack.maxStackSize)
                     itemStack
                 } catch (e: Exception) {
@@ -129,34 +128,28 @@ object MerchantHandler {
                     continue
                 }
             } else {
-                // Delega para parseItemStack — ele já sabe tratar quantidades como "1 diamond"
                 parseItemStack(rawCostString)
             }
 
+            // Marcar item como indisponível se pontos insuficientes
             if (requiredPoints > currentPoints) {
                 cost.addUnsafeEnchantment(Enchantment.UNBREAKING, 10)
-
                 val meta = cost.itemMeta
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
-
                 meta.lore(listOf(
                     Component.text("Pontos insuficientes: $currentPoints/$requiredPoints")
                         .color(NamedTextColor.RED)
                 ))
-
                 cost.itemMeta = meta
             }
 
-
-            // ✅ Upgrade seguro com limite máximo
+            // Aplicar encantamento usando o novo sistema
             val enchantedTool = EnchantmentHandler.enchantItem(tool, enchantName, nextLevel)
 
-            // ✅ Reduz pontos somente se realmente aplicou upgrade
-            //if (requiredPoints <= currentPoints) {
-            reducePoints(enchantedTool, requiredPoints)
-            //}
-
-            ItemUtils.updateLore(enchantedTool)
+            // Reduzir pontos apenas se teve sucesso
+            if (EnchantmentHandler.hasEnchantment(enchantedTool, enchantName)) {
+                reducePoints(enchantedTool, requiredPoints)
+            }
 
             val recipe = MerchantRecipe(enchantedTool, 999)
             recipe.addIngredient(tool)
@@ -165,33 +158,17 @@ object MerchantHandler {
         }
     }
 
-
-//    private fun getCurrentEnchantmentLevel(tool: ItemStack, enchantName: String): Int {
-//        val meta = tool.itemMeta ?: return 0
-//        val container = meta.persistentDataContainer
-//        val customEnchantmentsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc")
-//        val customLevelsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_lvl")
-//
-//        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: return 0
-//        val levels = container.get(customLevelsKey, PersistentDataType.STRING)?.split(",") ?: return 0
-//
-//        val index = enchantments.indexOf(enchantName)
-//        return if (index >= 0 && index < levels.size) {
-//            levels[index].toIntOrNull() ?: 0
-//        } else 0
-//    }
-
     private fun getCurrentPoints(tool: ItemStack): Int {
         val meta = tool.itemMeta ?: return 0
         val container = meta.persistentDataContainer
-        val pointsKey = NamespacedKey(ItemEvolutionPlugin.instance, "fplus_pontos")
+        val pointsKey = NamespacedKey(pluginInstance, "fplus_pontos")
         return container.get(pointsKey, PersistentDataType.INTEGER) ?: 0
     }
 
     private fun reducePoints(tool: ItemStack, points: Int) {
         val meta = tool.itemMeta ?: return
         val container = meta.persistentDataContainer
-        val pointsKey = NamespacedKey(ItemEvolutionPlugin.instance, "fplus_pontos")
+        val pointsKey = NamespacedKey(pluginInstance, "fplus_pontos")
 
         val currentPoints = container.get(pointsKey, PersistentDataType.INTEGER) ?: 0
         container.set(pointsKey, PersistentDataType.INTEGER, maxOf(0, currentPoints - points))
@@ -207,13 +184,12 @@ object MerchantHandler {
         val item = ItemStack(mat, amount)
 
         if (mat == Material.ENCHANTED_BOOK && parts.size >= 4) {
-            val enchantName = parts[2].lowercase() // NamespacedKey usa lowercase
+            val enchantName = parts[2].lowercase()
             val level = parts[3].toIntOrNull() ?: 1
             val meta = item.itemMeta as EnchantmentStorageMeta
 
             val key = NamespacedKey.minecraft(enchantName)
 
-            // Usando o novo sistema de Registry do Paper
             val enchant = RegistryAccess.registryAccess()
                 .getRegistry(RegistryKey.ENCHANTMENT)
                 .get(key)
@@ -228,7 +204,6 @@ object MerchantHandler {
 
         return item
     }
-
 
     private fun deserializeItemStack(data: String): ItemStack? {
         val parts = data.split(":")
