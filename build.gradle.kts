@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly("com.nexomc:nexo:1.10.0") //Nexo 1.X -> 1.X.0
     implementation(kotlin("stdlib"))
     implementation("org.apache.commons:commons-lang3:3.18.0")

@@ -1,24 +1,15 @@
 package com.ssg.itemevolution
 
+import com.ssg.itemevolution.dialogs.SoulToolUtils.hasSoul
 import net.kyori.adventure.text.Component
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.Damageable
 import org.bukkit.persistence.PersistentDataType
-import org.bukkit.NamespacedKey
 import org.bukkit.persistence.PersistentDataContainer
 import kotlin.math.*
 
 object ItemUtils {
-
-    private val counterKey = NamespacedKey(ItemEvolutionPlugin.instance, "fplus_contador")
-    private val levelKey = NamespacedKey(ItemEvolutionPlugin.instance, "fplus_level")
-    private val pointsKey = NamespacedKey(ItemEvolutionPlugin.instance, "fplus_pontos")
-    private val usesKey = NamespacedKey(ItemEvolutionPlugin.instance, "fplus_usos")
-    private val encKey = NamespacedKey(ItemEvolutionPlugin.instance, "fplus_enc")
-    private val customEnchantmentsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc")
-    private val customEnchantmentLevelsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_lvl")
-    private val customEnchantmentDisplayKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_display")
 
     fun testTool(item: ItemStack?): String {
         if (item == null) return ""
@@ -67,49 +58,52 @@ object ItemUtils {
         return up * (level - 1)
     }
 
-    fun upgradeItem(item: ItemStack): ItemStack {
+    fun setupItem(item: ItemStack): ItemStack {
         val meta = item.itemMeta ?: return item
         val container = meta.persistentDataContainer
+        container.set(EvolutionKey.USES.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 0)
+        container.set(EvolutionKey.COUNTER.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 1)
+        container.set(EvolutionKey.LEVEL.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 1)
+        container.set(EvolutionKey.POINTS.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 0)
+        item.itemMeta = meta
+        updateLore(item)
+        return item
+    }
 
+    fun upgradeItem(item: ItemStack): ItemStack {
+        if (!hasSoul(item)) return item
+        val meta = item.itemMeta ?: return item
+        val container = meta.persistentDataContainer
         val isArmor = ToolCategory.isArmor(ToolCategory.fromMaterial(item.type))
         val mult = if (isArmor) 0.25 else 1.0
 
-        val currentUses = container.get(usesKey, PersistentDataType.INTEGER) ?: 0
+        val currentUses = container.get(EvolutionKey.USES.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 0
+        val newUses = currentUses + 1
+        val counter = (container.get(EvolutionKey.COUNTER.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 0) + 1
 
-        if (currentUses == 0) {
-            // Primeiro uso
-            container.set(counterKey, PersistentDataType.INTEGER, 1)
-            container.set(levelKey, PersistentDataType.INTEGER, 1)
-            container.set(pointsKey, PersistentDataType.INTEGER, 0)
-            container.set(usesKey, PersistentDataType.INTEGER, 1)
-        } else {
-            // Incrementar usos
-            val newUses = currentUses + 1
-            val counter = (container.get(counterKey, PersistentDataType.INTEGER) ?: 0) + 1
-
-            container.set(counterKey, PersistentDataType.INTEGER, counter)
-            container.set(usesKey, PersistentDataType.INTEGER, newUses)
-        }
+        container.set(EvolutionKey.COUNTER.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, counter)
+        container.set(EvolutionKey.USES.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, newUses)
 
         val durability = item.type.maxDurability.toDouble()
-        val counter = container.get(counterKey, PersistentDataType.INTEGER) ?: 1
         val newLevel = floor(((counter / (durability * mult)).pow(0.75)) + 1).toInt()
 
-        val currentLevel = container.get(levelKey, PersistentDataType.INTEGER) ?: 1
+        val currentLevel = container.get(EvolutionKey.LEVEL.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 1
 
         if (newLevel > currentLevel) {
             val pointsUp = getPointsUp(item, newLevel)
-            val currentPoints = container.get(pointsKey, PersistentDataType.INTEGER) ?: 0
+            val currentPoints = container.get(EvolutionKey.POINTS.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 0
             val newPoints = currentPoints + pointsUp
 
-            container.set(levelKey, PersistentDataType.INTEGER, newLevel)
-            container.set(pointsKey, PersistentDataType.INTEGER, newPoints)
+            container.set(EvolutionKey.LEVEL.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, newLevel)
+            container.set(EvolutionKey.POINTS.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, newPoints)
         }
 
         item.itemMeta = meta
         updateLore(item)
         return item
     }
+
+
 
 
     fun improveItem(item: ItemStack): ItemStack {
@@ -143,14 +137,14 @@ object ItemUtils {
         }
 
         // Reset para level 1 (sobrescrever apenas estes valores específicos)
-        container.set(counterKey, PersistentDataType.INTEGER, 1)
-        container.set(levelKey, PersistentDataType.INTEGER, 1)
+        container.set(EvolutionKey.COUNTER.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 1)
+        container.set(EvolutionKey.LEVEL.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER, 1)
 
         // Definir o meta ANTES de copiar encantamentos vanilla
         newItem.itemMeta = meta
 
         // DEPOIS copiar encantamentos vanilla
-        if (item.enchantments.isNotEmpty()) {
+        if (hasVanillaEnchantments(item)) {
             newItem.addUnsafeEnchantments(item.enchantments)
         }
 
@@ -219,9 +213,12 @@ object ItemUtils {
         val lore = mutableListOf<Component>()
 
         // Enchantments customizados
-        val customEnchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: emptyList()
-        val customLevels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING)?.split(",") ?: emptyList()
-        val displayFlags = container.get(customEnchantmentDisplayKey, PersistentDataType.STRING)?.split(",") ?: emptyList()
+        val customEnchantments = container.get(EvolutionKey.CUSTOM_ENCHANTS.key(ItemEvolutionPlugin.instance)
+            , PersistentDataType.STRING)?.split(",") ?: emptyList()
+        val customLevels = container.get(EvolutionKey.CUSTOM_ENCHANT_LEVELS.key(ItemEvolutionPlugin.instance)
+            , PersistentDataType.STRING)?.split(",") ?: emptyList()
+        val displayFlags = container.get(EvolutionKey.CUSTOM_ENCHANT_DISPLAY.key(ItemEvolutionPlugin.instance)
+            , PersistentDataType.STRING)?.split(",") ?: emptyList()
 
         for (i in customEnchantments.indices) {
             if (i < customLevels.size) {
@@ -236,27 +233,24 @@ object ItemUtils {
         lore.add(Component.text("§7----------------------"))
 
         // Estatísticas
-        val uses = container.get(usesKey, PersistentDataType.INTEGER) ?: 0
+        val uses = container.get(EvolutionKey.USES.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 0
+
+        val level = container.get(EvolutionKey.LEVEL.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 1
+        val points = container.get(EvolutionKey.POINTS.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 0
+        val counter = container.get(EvolutionKey.COUNTER.key(ItemEvolutionPlugin.instance), PersistentDataType.INTEGER) ?: 1
+
+        val durability = item.type.maxDurability.toDouble()
+        val isArmor = ToolCategory.isArmor(ToolCategory.fromMaterial(item.type))
+        val mult = if (isArmor) 0.25 else 1.0
+
+        val before = ceil(((durability * mult).pow(3) * (level - 1).toDouble().pow(4)).pow(1.0 / 3.0)).toInt()
+        val nextLvl = ceil(((durability * mult).pow(3) * level.toDouble().pow(4)).pow(1.0 / 3.0) - before).toInt()
+        val toNext = counter - before
+
         lore.add(Component.text("§7Usos: $uses"))
-
-        val encValue = container.get(encKey, PersistentDataType.INTEGER) ?: 0
-        if (encValue != 1) {
-            val level = container.get(levelKey, PersistentDataType.INTEGER) ?: 1
-            val points = container.get(pointsKey, PersistentDataType.INTEGER) ?: 0
-            val counter = container.get(counterKey, PersistentDataType.INTEGER) ?: 1
-
-            val durability = item.type.maxDurability.toDouble()
-            val isArmor = ToolCategory.isArmor(ToolCategory.fromMaterial(item.type))
-            val mult = if (isArmor) 0.25 else 1.0
-
-            val before = ceil(((durability * mult).pow(3) * (level - 1).toDouble().pow(4)).pow(1.0 / 3.0)).toInt()
-            val nextLvl = ceil(((durability * mult).pow(3) * level.toDouble().pow(4)).pow(1.0 / 3.0) - before).toInt()
-            val toNext = counter - before
-
-            lore.add(Component.text("§7Lvl: $level"))
-            lore.add(Component.text("§7Pontos: $points"))
-            lore.add(Component.text("§7NextLvl: $toNext/$nextLvl"))
-        }
+        lore.add(Component.text("§7Lvl: $level"))
+        lore.add(Component.text("§7Pontos: $points"))
+        lore.add(Component.text("§7NextLvl: $toNext/$nextLvl"))
 
         lore.add(Component.text("§7----------------------"))
 
@@ -342,6 +336,10 @@ object ItemUtils {
         val upgradeAmount = getMaterialQuantity(upgradeMaterial)
         if (upgradeMaterial == Material.NETHERITE_INGOT) return ItemStack(Material.NETHERITE_INGOT, 1)
         return ItemStack(upgradeMaterial, upgradeAmount)
+    }
+
+    fun hasVanillaEnchantments(item: ItemStack): Boolean {
+        return item.enchantments.isNotEmpty()
     }
 
 }

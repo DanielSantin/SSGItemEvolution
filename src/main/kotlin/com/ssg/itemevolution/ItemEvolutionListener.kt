@@ -1,8 +1,9 @@
 package com.ssg.itemevolution
 
 import com.nexomc.nexo.api.NexoFurniture
+import com.ssg.itemevolution.dialogs.SoulToolDialog
+import com.ssg.itemevolution.dialogs.SoulToolUtils.hasSoul
 import org.bukkit.Bukkit
-import org.bukkit.GameMode
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.block.BlockFace
@@ -15,23 +16,22 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.event.enchantment.EnchantItemEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
-import org.bukkit.NamespacedKey
 import org.bukkit.event.Event
 import org.bukkit.event.EventPriority
 import org.bukkit.event.block.Action
+import org.bukkit.event.enchantment.EnchantItemEvent
 import org.bukkit.util.Vector
 import kotlin.math.abs
 
 class ItemEvolutionListener : Listener {
 
-    private val breakSaveKey = NamespacedKey(ItemEvolutionPlugin.instance, "break_save")
     private val heldArmorIntercept: MutableMap<java.util.UUID, ItemStack> = mutableMapOf()
     private val hasNexo = Bukkit.getPluginManager().getPlugin("Nexo") != null
+    private val soulToolDialog = SoulToolDialog()
 
     fun interceptToolAndOpenMerchant(player: Player, tool: ItemStack){
         if (ItemUtils.testTool(tool).isNotEmpty()) {
@@ -66,31 +66,38 @@ class ItemEvolutionListener : Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     fun onPlayerInteract(event: PlayerInteractEvent) {
-        if (!hasNexo) return
         if (event.action != Action.RIGHT_CLICK_BLOCK) return
         val clickedBlock = event.clickedBlock ?: return
-        if (NexoFurniture.isFurniture(clickedBlock.location)) {
-            val player = event.player
-            val baseEntity = NexoFurniture.baseEntity(clickedBlock.location)
-            val furnitureMechanic = NexoFurniture.furnitureMechanic(baseEntity)
+        val player = event.player
+        val tool = player.inventory.itemInMainHand
+        val isBancadaNexo = hasNexo &&
+                NexoFurniture.isFurniture(clickedBlock.location) &&
+                NexoFurniture.furnitureMechanic(NexoFurniture.baseEntity(clickedBlock.location))?.itemID == "bancada_de_melhoria"
 
-            if (furnitureMechanic?.itemID == "bancada_de_melhoria") {
-                event.isCancelled = true
-                event.setUseItemInHand(Event.Result.DENY)
-                event.setUseInteractedBlock(Event.Result.DENY)
+        val isVanillaSmithing = !hasNexo && clickedBlock.type == Material.SMITHING_TABLE
 
-                val tool = player.inventory.itemInMainHand
+        if (isBancadaNexo || isVanillaSmithing) {
+            cancelInteraction(event)
+            if (hasSoul(tool)){
                 interceptToolAndOpenMerchant(player, tool)
+            } else {
+                soulToolDialog.checkEligibilityAndShowDialog(player, tool)
             }
         }
     }
 
+    private fun cancelInteraction(event: PlayerInteractEvent) {
+        event.isCancelled = true
+        event.setUseItemInHand(Event.Result.DENY)
+        event.setUseInteractedBlock(Event.Result.DENY)
+    }
 
     @EventHandler
-    fun onEntityDamageByEntity(event: EntityDamageByEntityEvent) {
+        fun onEntityDamageByEntity(event: EntityDamageByEntityEvent) {
         val attacker = event.damager as? Player ?: return
         val tool = attacker.inventory.itemInMainHand
 
+        //if (!hasSoul(tool)) return
         val toolCategory = ItemUtils.testTool(tool)
 
         when (toolCategory) {
@@ -130,6 +137,7 @@ class ItemEvolutionListener : Listener {
     fun onBlockBreak(event: BlockBreakEvent) {
         val player = event.player
         val tool = player.inventory.itemInMainHand
+        //if (!hasSoul(tool)) return
         val toolCategory = ItemUtils.testTool(tool)
 
         if (toolCategory in listOf("axe", "hoe", "pickaxe", "shovel")) {
@@ -147,33 +155,22 @@ class ItemEvolutionListener : Listener {
     @EventHandler
     fun onInventoryOpen(event: InventoryOpenEvent) {
         val player = event.player as? Player ?: return
-
-        // Restaurar item de ferramenta quando abrir inventário do mercador
         MerchantHandler.restoreToolItem(player)
     }
+
 
     @EventHandler
     fun onEnchantItem(event: EnchantItemEvent) {
         val item = event.item
-        val meta = item.itemMeta ?: return
-        val container = meta.persistentDataContainer
-        val encKey = NamespacedKey(ItemEvolutionPlugin.instance, "fplus_enc")
-
-        val encValue = container.get(encKey, PersistentDataType.INTEGER) ?: 1
-
-        if (encValue == 0) {
+        if (hasSoul(item)) {
             event.isCancelled = true
             return
         }
-
-        // Marcar item como encantado
-        container.set(encKey, PersistentDataType.INTEGER, 1)
-        item.itemMeta = meta
-        ItemUtils.updateLore(item)
     }
 
     private fun processArmorUpgrade(armor: ItemStack?) {
         if (armor != null && ToolType.getAllToolMaterials().contains(armor.type)) {
+            //if (!hasSoul(armor)) return
             val upgradedArmor = ItemUtils.upgradeItem(armor)
             armor.itemMeta = upgradedArmor.itemMeta
             armor.addEnchantments(upgradedArmor.enchantments)
@@ -200,8 +197,8 @@ class ItemEvolutionListener : Listener {
         val meta = tool.itemMeta ?: return
         val container = meta.persistentDataContainer
 
-        val customEnchantmentsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc")
-        val customLevelsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_lvl")
+        val customEnchantmentsKey = EvolutionKey.CUSTOM_ENCHANTS.key(ItemEvolutionPlugin.instance)
+        val customLevelsKey = EvolutionKey.CUSTOM_ENCHANT_LEVELS.key(ItemEvolutionPlugin.instance)
 
         val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: return
         val levels = container.get(customLevelsKey, PersistentDataType.STRING)?.split(",") ?: return
@@ -220,7 +217,7 @@ class ItemEvolutionListener : Listener {
 
     private fun processAmplifierEnchantment(player: Player, level: Int, event: BlockBreakEvent) {
         val block = event.block
-        val breakSpeed = getBlockBreakSpeed(block, player)
+        val breakSpeed = getBlockBreakSpeed(block)
         val slownessDuration = (1.0 / breakSpeed / 2.0 * 20).toLong() // Converter para ticks
 
         // Aplicar Mining Fatigue
@@ -233,7 +230,7 @@ class ItemEvolutionListener : Listener {
 
         for (vector in vectors) {
             val targetBlock = block.location.add(vector).block
-            if (getBlockBreakSpeed(targetBlock, player) >=  breakSpeed && targetBlock.type != Material.BEDROCK) {
+            if (getBlockBreakSpeed(targetBlock) >=  breakSpeed && targetBlock.type != Material.BEDROCK) {
                 targetBlock.breakNaturally(player.inventory.itemInMainHand)
             }
         }
@@ -317,15 +314,15 @@ class ItemEvolutionListener : Listener {
             }
         }
 
-        player.persistentDataContainer.set(breakSaveKey, PersistentDataType.STRING, direction.name)
+        player.persistentDataContainer.set(EvolutionKey.BREAK_SAVE.key(ItemEvolutionPlugin.instance), PersistentDataType.STRING, direction.name)
     }
 
     private fun getBreakDirection(player: Player): BlockFace {
-        val directionName = player.persistentDataContainer.get(breakSaveKey, PersistentDataType.STRING)
+        val directionName = player.persistentDataContainer.get(EvolutionKey.BREAK_SAVE.key(ItemEvolutionPlugin.instance), PersistentDataType.STRING)
         return if (directionName != null) {
             try {
                 BlockFace.valueOf(directionName)
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 BlockFace.NORTH
             }
         } else {
@@ -333,7 +330,7 @@ class ItemEvolutionListener : Listener {
         }
     }
 
-    private fun getBlockBreakSpeed(block: org.bukkit.block.Block, player: Player): Double {
+    private fun getBlockBreakSpeed(block: org.bukkit.block.Block): Double {
         // Implementação simplificada para obter velocidade de quebra do bloco
         // Em um plugin real, você precisaria calcular isso baseado no material, ferramenta e encantamentos
         return when (block.type) {

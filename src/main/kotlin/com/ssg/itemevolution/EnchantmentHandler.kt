@@ -3,13 +3,8 @@ package com.ssg.itemevolution
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
-import org.bukkit.NamespacedKey
 
 object EnchantmentHandler {
-
-    private val customEnchantmentsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc")
-    private val customEnchantmentLevelsKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_lvl")
-    private val customEnchantmentDisplayKey = NamespacedKey(ItemEvolutionPlugin.instance, "custom_enc_display")
 
     /**
      * Adiciona encantamento à lista customizada (para lore)
@@ -18,9 +13,9 @@ object EnchantmentHandler {
         val meta = item.itemMeta ?: return
         val container = meta.persistentDataContainer
 
-        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",")?.toMutableList() ?: mutableListOf()
-        val levels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING)?.split(",")?.toMutableList() ?: mutableListOf()
-        val displayFlags = container.get(customEnchantmentDisplayKey, PersistentDataType.STRING)?.split(",")?.toMutableList() ?: mutableListOf()
+        val enchantments = container.get(EvolutionKey.CUSTOM_ENCHANTS.key(ItemEvolutionPlugin.instance), PersistentDataType.STRING)?.split(",")?.toMutableList() ?: mutableListOf()
+        val levels = container.get(EvolutionKey.CUSTOM_ENCHANT_LEVELS.key(ItemEvolutionPlugin.instance), PersistentDataType.STRING)?.split(",")?.toMutableList() ?: mutableListOf()
+        val displayFlags = container.get(EvolutionKey.CUSTOM_ENCHANT_DISPLAY.key(ItemEvolutionPlugin.instance), PersistentDataType.STRING)?.split(",")?.toMutableList() ?: mutableListOf()
 
         val index = enchantments.indexOf(enchantName)
         if (index >= 0) {
@@ -34,9 +29,9 @@ object EnchantmentHandler {
             displayFlags.add(displayEnchantment.toString())
         }
 
-        container.set(customEnchantmentsKey, PersistentDataType.STRING, enchantments.joinToString(","))
-        container.set(customEnchantmentLevelsKey, PersistentDataType.STRING, levels.joinToString(","))
-        container.set(customEnchantmentDisplayKey, PersistentDataType.STRING, displayFlags.joinToString(","))
+        container.set(EvolutionKey.CUSTOM_ENCHANTS.key(ItemEvolutionPlugin.instance), PersistentDataType.STRING, enchantments.joinToString(","))
+        container.set(EvolutionKey.CUSTOM_ENCHANT_LEVELS.key(ItemEvolutionPlugin.instance), PersistentDataType.STRING, levels.joinToString(","))
+        container.set(EvolutionKey.CUSTOM_ENCHANT_DISPLAY.key(ItemEvolutionPlugin.instance), PersistentDataType.STRING, displayFlags.joinToString(","))
 
         item.itemMeta = meta
     }
@@ -80,32 +75,10 @@ object EnchantmentHandler {
         }
     }
 
-
-
-//    /**
-//     * Obtém todos os encantamentos customizados de um item
-//     */
-//    fun getCustomEnchantments(item: ItemStack): Map<String, Int> {
-//        val meta = item.itemMeta ?: return emptyMap()
-//        val container = meta.persistentDataContainer
-//
-//        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING)?.split(",") ?: return emptyMap()
-//        val levels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING)?.split(",") ?: return emptyMap()
-//
-//        val result = mutableMapOf<String, Int>()
-//        for (i in enchantments.indices) {
-//            if (i < levels.size) {
-//                val level = levels[i].toIntOrNull() ?: 1
-//                result[enchantments[i]] = level
-//            }
-//        }
-//
-//        return result
-//    }
-
     fun quickHasCustomEnchantment(item: ItemStack, enchantName: String): Boolean {
         val meta = item.itemMeta ?: return false
-        val enchantments = meta.persistentDataContainer.get(customEnchantmentsKey, PersistentDataType.STRING)
+        val enchantments = meta.persistentDataContainer.get(EvolutionKey.CUSTOM_ENCHANTS.key(ItemEvolutionPlugin.instance)
+            , PersistentDataType.STRING)
         return enchantments?.contains(enchantName) == true
     }
 
@@ -113,8 +86,10 @@ object EnchantmentHandler {
         val meta = item.itemMeta ?: return 0
         val container = meta.persistentDataContainer
 
-        val enchantments = container.get(customEnchantmentsKey, PersistentDataType.STRING) ?: return 0
-        val levels = container.get(customEnchantmentLevelsKey, PersistentDataType.STRING) ?: return 0
+        val enchantments = container.get(EvolutionKey.CUSTOM_ENCHANTS.key(ItemEvolutionPlugin.instance)
+            , PersistentDataType.STRING) ?: return 0
+        val levels = container.get(EvolutionKey.CUSTOM_ENCHANT_LEVELS.key(ItemEvolutionPlugin.instance)
+            , PersistentDataType.STRING) ?: return 0
 
         // Split apenas uma vez para eficiência
         val enchantmentList = enchantments.split(",")
@@ -144,7 +119,6 @@ object EnchantmentHandler {
         val vanillaEnchant = getVanillaEnchantment(enchantName)
         if (vanillaEnchant != null) {
             newItem.addUnsafeEnchantment(vanillaEnchant, level)
-            //addToCustomEnchantmentList(newItem, enchantName, level, displayEnchantment = false)
         } else {
             addToCustomEnchantmentList(newItem, enchantName, level)
         }

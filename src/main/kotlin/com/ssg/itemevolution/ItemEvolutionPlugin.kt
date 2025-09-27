@@ -11,12 +11,11 @@ class ItemEvolutionPlugin : JavaPlugin() {
         lateinit var instance: ItemEvolutionPlugin
             private set
 
-        lateinit var itemEvolutionListener:  ItemEvolutionListener
+        lateinit var itemEvolutionListener: ItemEvolutionListener
             private set
 
         var evolutionsConfig: YamlConfiguration? = null
             private set
-
     }
 
     override fun onEnable() {
