@@ -20,24 +20,34 @@ class AreaMiningEnchantment(
         }
     }
 
+    private fun isBreakable(target: Block, originHardness: Float): Boolean {
+        val hardness = target.blockData.material.hardness
+        return target.type != org.bukkit.Material.BEDROCK && hardness <= originHardness
+    }
+
     private fun getBlocksToBreak(origin: Block, face: BlockFace, level: Int): List<Block> {
         val blocks = mutableListOf<Block>()
+        val originHardness = origin.blockData.material.hardness
 
         when (level) {
             1 -> {
-                // 1x3 (linha de 3 blocos perpendicular à face)
-                for (i in -1..1) {
-                    val target = when (face) {
-                        BlockFace.UP, BlockFace.DOWN -> origin.getRelative(0, i, 0) // Minera na vertical (eixo Y)
-                        BlockFace.NORTH, BlockFace.SOUTH -> origin.getRelative(i, 0, 0) // Minera na horizontal (eixo X)
-                        BlockFace.EAST, BlockFace.WEST -> origin.getRelative(0, 0, i) // Minera na horizontal (eixo Z)
-                        else -> origin
+                when (face) {
+                    BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST -> {
+                        for (i in -1..1) {
+                            val target = origin.getRelative(0, i, 0)
+                            if (!target.type.isAir && isBreakable(target, originHardness)) blocks.add(target)
+                        }
                     }
-                    blocks.add(target)
+                    BlockFace.UP, BlockFace.DOWN -> {
+                        for (i in -1..1) {
+                            val target = origin.getRelative(i, 0, 0)
+                            if (!target.type.isAir && isBreakable(target, originHardness)) blocks.add(target)
+                        }
+                    }
+                    else -> if (!origin.type.isAir && isBreakable(origin, originHardness)) blocks.add(origin)
                 }
             }
             2 -> {
-                // 3x3 (plano perpendicular à face clicada)
                 for (dx in -1..1) {
                     for (dy in -1..1) {
                         val target = when (face) {
@@ -46,10 +56,12 @@ class AreaMiningEnchantment(
                             BlockFace.EAST, BlockFace.WEST -> origin.getRelative(0, dy, dx) // Plano Y-Z
                             else -> origin
                         }
-                        blocks.add(target)
+                        if (!target.type.isAir && isBreakable(target, originHardness)) blocks.add(target)
                     }
                 }
             }
         }
         return blocks
-    }}
+    }
+
+}
