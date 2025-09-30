@@ -182,7 +182,7 @@ class ItemEvolutionListener(
             )
 
             when (eventType) {
-                EnchantmentEventType.BLOCK_BREAK -> context["block"] = target
+                EnchantmentEventType.BLOCK_BREAK -> context["breakEvent"] = originalEvent!!
                 EnchantmentEventType.ENTITY_DAMAGE -> context["damageEvent"] = originalEvent!!
                 else -> {}
             }

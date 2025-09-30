@@ -4,7 +4,7 @@ import com.ssg.itemevolution.enchantments.mining.AreaMiningEnchantment
 import com.ssg.itemevolution.enchantments.mining.DesabarEnchantment
 import com.ssg.itemevolution.enchantments.mining.VeinMiningEnchantment
 import com.ssg.itemevolution.enchantments.utility.EternaEnchantment
-import team.unnamed.creative.model.ElementFace.face
+import org.bukkit.block.BlockFace
 
 /**
  * Agrupa os handlers de encantamentos para facilitar o registro.
@@ -14,15 +14,21 @@ class EnchantmentEventHandlers(
     private val desabarEnchantment: DesabarEnchantment,
     private val veinMiningEnchantment: VeinMiningEnchantment,
     private val eternaEnchantment: EternaEnchantment,
-    private val areaMiningEnchantment: AreaMiningEnchantment
+    private val areaMiningEnchantment: AreaMiningEnchantment,
+    private val plugin: com.ssg.itemevolution.ItemEvolutionPlugin
 ) {
     val desabarHandler = object : EnchantmentEventHandler {
         override fun handle(event: EnchantmentEvent): EnchantmentEventResult {
             if (event.type != EnchantmentEventType.BLOCK_BREAK) return EnchantmentEventResult.IGNORED
 
             val player = event.player
-            val block = event.context["block"] as? org.bukkit.block.Block ?: return EnchantmentEventResult.IGNORED
+            val breakEvent = event.context["breakEvent"] as? org.bukkit.event.block.BlockBreakEvent
+            if (breakEvent == null) {
+                plugin.logger.warning("BreakEvent não encontrado no context")
+                return EnchantmentEventResult.IGNORED
+            }
 
+            val block = breakEvent.block
             if (player.isSneaking) {
                 val originalType = block.type
                 val originalData = block.blockData.clone()
@@ -39,8 +45,13 @@ class EnchantmentEventHandlers(
             if (event.type != EnchantmentEventType.BLOCK_BREAK) return EnchantmentEventResult.IGNORED
 
             val player = event.player
-            val block = event.context["block"] as? org.bukkit.block.Block ?: return EnchantmentEventResult.IGNORED
+            val breakEvent = event.context["breakEvent"] as? org.bukkit.event.block.BlockBreakEvent
+            if (breakEvent == null) {
+                plugin.logger.warning("BreakEvent não encontrado no context")
+                return EnchantmentEventResult.IGNORED
+            }
 
+            val block = breakEvent.block
             if (player.isSneaking) {
                 val originalType = block.type
                 val originalData = block.blockData.clone()
@@ -52,17 +63,27 @@ class EnchantmentEventHandlers(
         }
     }
 
+
     val areaMiningHandler = object : EnchantmentEventHandler {
         override fun handle(event: EnchantmentEvent): EnchantmentEventResult {
             if (event.type != EnchantmentEventType.BLOCK_BREAK) return EnchantmentEventResult.IGNORED
 
             val player = event.player
-            val block = event.context["block"] as? org.bukkit.block.Block ?: return EnchantmentEventResult.IGNORED
-            val face = event.context["blockFace"] as? org.bukkit.block.BlockFace ?: return EnchantmentEventResult.IGNORED
+            val breakEvent = event.context["breakEvent"] as? org.bukkit.event.block.BlockBreakEvent
+            if (breakEvent == null) {
+                plugin.logger.warning("BreakEvent não encontrado no context")
+                return EnchantmentEventResult.IGNORED
+            }
 
-            // Executa sempre que o encantamento estiver ativo (sem precisar agachar, diferente do vein/desabar)
-            areaMiningEnchantment.executeAreaMining(player, block, event.item, event.level, face)
+            val block = breakEvent.block
+            val rayTraceResult = player.world.rayTraceBlocks(
+                player.eyeLocation,
+                player.location.direction,
+                10.0 // Distância do raio, ajuste conforme necessário
+            )
+            val face = rayTraceResult?.hitBlockFace ?: BlockFace.SELF
 
+            areaMiningEnchantment.executeAreaMining( block, event.item, event.level, face)
             return EnchantmentEventResult.HANDLED
         }
     }
