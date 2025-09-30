@@ -1,6 +1,7 @@
 package com.ssg.itemevolution.enchantments.mining
 
 import com.ssg.itemevolution.ItemEvolutionPlugin
+import com.ssg.itemevolution.services.ItemRepairService.applyDurabilityDamage
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -72,6 +73,7 @@ class DesabarEnchantment (
                     originalBlockWasBroken = true
                 }
 
+                applyDurabilityDamage(tool)
                 block.breakNaturally(tool)
                 block.world.playEffect(block.location, org.bukkit.Effect.STEP_SOUND, block.type)
             }
