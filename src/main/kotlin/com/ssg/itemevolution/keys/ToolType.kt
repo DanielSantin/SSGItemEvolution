@@ -1,4 +1,4 @@
-package com.ssg.itemevolution
+package com.ssg.itemevolution.keys
 
 import org.bukkit.Material
 

@@ -1,0 +1,143 @@
+  enchantments:
+    desabar:
+      display-name: "Desabar"
+      max-level: 3
+      point-costs: [10, 25, 45]
+      item-costs:
+        - "3 oak_log"
+        - "5 oak_log"
+        - "8 oak_log"
+      compatible-tools: [axe]
+      description:
+        - "Quebra múltiplos blocos de madeira"
+        - "quando agachado"
+
+    efficiency:
+      display-name: "Eficiência"
+      max-level: 6
+      point-costs: [4, 6, 8, 12, 14, 18]
+      item-costs:
+        - "16 redstone"
+        - "32 redstone"
+        - "64 redstone"
+        - "16 redstone_block"
+        - "32 redstone_block"
+        - "64 redstone_block"
+      compatible-tools: [pickaxe, axe, shovel, hoe]
+
+    unbreaking:
+      display-name: "Inquebrável"
+      max-level: 4
+      point-costs: [6, 8, 12, 14]
+      item-costs:
+        - "1 copper_ingot"
+        - "1 iron_ingot"
+        - "1 diamond"
+        - "1 netherite_scrap"
+      compatible-tools: [pickaxe, axe, shovel, hoe, sword, bow, crossbow, fishing_rod, helmet, chestplate, leggings, boots]
+
+    fortune:
+      display-name: "Fortuna"
+      max-level: 4
+      point-costs: [6, 8, 12, 14]
+      item-costs:
+        - "32 lapis_lazuli"
+        - "16 lapis_block"
+        - "64 lapis_block"
+        - "4 rabbit_foot"
+      compatible-tools: [pickaxe, axe, hoe]
+
+    silk_touch:
+      display-name: "Toque Suave"
+      max-level: 1
+      point-costs: [10]
+      item-costs:
+        - "1 ghast_tear"
+      compatible-tools: [pickaxe, axe, shovel, hoe]
+
+    mending:
+      display-name: "Remendo"
+      max-level: 1
+      point-costs: [8]
+      item-costs:
+        - "1 nexo:mending_book"
+      compatible-tools: [pickaxe, axe, shovel, hoe, sword, bow, crossbow, fishing_rod, helmet, chestplate, leggings, boots]
+
+    looting:
+      display-name: "Pilhagem"
+      max-level: 4
+      point-costs: [6, 8, 12, 14]
+      item-costs:
+        - "32 lapis_lazuli"
+        - "16 lapis_block"
+        - "64 lapis_block"
+        - "4 rabbit_foot"
+      compatible-tools: [sword, axe]
+
+    sharpness:
+      display-name: "Afiação"
+      max-level: 5
+      point-costs: [6, 12, 18, 24, 30]
+      item-costs:
+        - "2 flint"
+        - "4 flint"
+        - "6 flint"
+        - "8 flint"
+        - "10 flint"
+      compatible-tools: [sword, axe]
+
+    fire_aspect:
+      display-name: "Aspecto Flamejante"
+      max-level: 2
+      point-costs: [8, 16]
+      item-costs:
+        - "1 blaze_powder"
+        - "2 blaze_powder"
+      compatible-tools: [sword, axe]
+
+    knockback:
+      display-name: "Repulsão"
+      max-level: 2
+      point-costs: [6, 12]
+      item-costs:
+        - "1 slime_ball"
+        - "2 slime_ball"
+      compatible-tools: [sword, axe]
+
+    smite:
+      display-name: "Ruína dos Mortos-Vivos"
+      max-level: 5
+      point-costs: [4, 8, 12, 16, 20]
+      item-costs:
+        - "1 bone"
+        - "2 bone"
+        - "4 bone"
+        - "8 bone"
+        - "16 bone"
+      compatible-tools: [sword, axe]
+
+    bane_of_arthropods:
+      display-name: "Aniquilação de Artrópodes"
+      max-level: 5
+      point-costs: [4, 8, 12, 16, 20]
+      item-costs:
+        - "1 spider_eye"
+        - "2 spider_eye"
+        - "4 spider_eye"
+        - "8 spider_eye"
+        - "16 spider_eye"
+      compatible-tools: [sword, axe]
+
+  tool-compatibility:
+    sword: [looting, sharpness, fire_aspect, knockback, smite, bane_of_arthropods, unbreaking, mending]
+    axe: [efficiency, fortune, silk_touch, desabar, looting, sharpness, fire_aspect, knockback, smite, bane_of_arthropods, unbreaking, mending]
+    pickaxe: [efficiency, fortune, silk_touch, unbreaking, mending]
+    shovel: [efficiency, fortune, silk_touch, unbreaking, mending]
+    hoe: [efficiency, fortune, silk_touch, unbreaking, mending]
+    bow: [unbreaking, mending]
+    crossbow: [unbreaking, mending]
+    fishing_rod: [unbreaking, mending]
+    helmet: [unbreaking, mending]
+    chestplate: [unbreaking, mending]
+    leggings: [unbreaking, mending]
+    boots: [unbreaking, mending]

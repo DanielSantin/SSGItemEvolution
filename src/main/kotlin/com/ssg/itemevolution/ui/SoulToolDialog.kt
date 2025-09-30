@@ -1,6 +1,7 @@
-package com.ssg.itemevolution.dialogs
+package com.ssg.itemevolution.ui
 
-import io.papermc.paper.dialog.*
+import com.ssg.itemevolution.services.SoulToolService
+import io.papermc.paper.dialog.Dialog
 import io.papermc.paper.registry.data.dialog.ActionButton
 import io.papermc.paper.registry.data.dialog.DialogBase
 import io.papermc.paper.registry.data.dialog.action.DialogAction
@@ -15,11 +16,13 @@ import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
-class SoulToolDialog {
+class SoulToolDialog(
+    private val soulToolService: SoulToolService // ✅ injetado pelo ServiceContainer
+) {
 
     fun checkEligibilityAndShowDialog(player: Player, tool: ItemStack) {
-        val result = SoulToolUtils.checkSoulEligibility(tool)
-        if (result != SoulToolUtils.SoulToolCheckResult.VALID) {
+        val result = soulToolService.checkSoulEligibility(tool)
+        if (result != SoulToolService.SoulToolCheckResult.VALID) {
             result.message?.let { player.sendMessage(it) }
             return
         }
@@ -27,7 +30,7 @@ class SoulToolDialog {
     }
 
     fun showSoulTransformDialog(player: Player, tool: ItemStack) {
-        val confirmAction = DialogAction.customClick({ view, audience ->
+        val confirmAction = DialogAction.customClick({ _, audience ->
             if (audience is Player) {
                 handleTransformation(audience, tool)
             }
@@ -37,7 +40,7 @@ class SoulToolDialog {
             .build()
         )
 
-        val cancelAction = DialogAction.customClick({ view, audience ->
+        val cancelAction = DialogAction.customClick({ _, audience ->
             if (audience is Player) {
                 handleCancellation(audience)
             }
@@ -54,7 +57,7 @@ class SoulToolDialog {
     }
 
     private fun handleTransformation(player: Player, tool: ItemStack) {
-        val success = SoulToolUtils.transformToSoulTool(tool)
+        val success = soulToolService.transformToSoulTool(tool)
 
         if (success) {
             sendTransformationSuccessMessage(player)
@@ -71,11 +74,11 @@ class SoulToolDialog {
     }
 
     private fun createTransformDialog(confirmAction: DialogAction, cancelAction: DialogAction): Dialog {
-        return Dialog.create({ builder ->
+        return Dialog.create { builder ->
             builder.empty()
                 .base(createDialogBase())
                 .type(createConfirmationType(confirmAction, cancelAction))
-        })
+        }
     }
 
     private fun createDialogBase(): DialogBase {
@@ -156,7 +159,7 @@ class SoulToolDialog {
         )
     }
 
-    // === Métodos de Feedback e Sons ===
+    // === Feedback e Sons ===
 
     private fun sendTransformationSuccessMessage(player: Player) {
         player.sendMessage(

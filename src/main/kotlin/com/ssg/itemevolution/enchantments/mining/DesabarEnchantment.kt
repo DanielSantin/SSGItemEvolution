@@ -5,18 +5,18 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
+import org.bukkit.block.data.BlockData
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.Sound
-import org.bukkit.block.data.BlockData
 import java.util.*
 
-class DesabarEnchantment {
-
+class DesabarEnchantment (
+    private val plugin: ItemEvolutionPlugin
+) {
     companion object {
         private const val MAX_TREE_SIZE = 200
         private const val MAX_SEARCH_RADIUS = 30
-        private const val MAX_LEAF_BRIDGE_DISTANCE = 3
 
         private fun mat(name: String) = Material.getMaterial(name)
             ?: throw IllegalArgumentException("Material $name não encontrado. Verifique a versão do servidor.")
@@ -47,33 +47,22 @@ class DesabarEnchantment {
 
     fun executeDesabar(player: Player, brokenBlock: Block, tool: ItemStack, level: Int, originalType: Material, originalData: BlockData) {
         if (!WOOD_MATERIALS.contains(brokenBlock.type)) return
+        plugin.logger.info("DesabarEnchantment - executeDesabar")
 
-        val treeBlocks = getTreeWithLeafBridges(brokenBlock)
+        val treeBlocks = getTree(brokenBlock)
         if (treeBlocks.isEmpty()) return
 
-        // Ordenar de cima para baixo
         val sortedBlocks = treeBlocks.sortedByDescending { it.y }
 
-        // Configuração das probabilidades por nível
         val probabilityConfig = mapOf(
             1 to mapOf(0 to 100.0),
-            2 to mapOf(
-                0 to 25.0,
-                1 to 50.0,
-                2 to 25.0
-            ),
-            3 to mapOf(
-                0 to 10.0,
-                1 to 40.0,
-                2 to 30.0,
-                3 to 20.0
-            )
+            2 to mapOf(0 to 25.0, 1 to 50.0, 2 to 25.0),
+            3 to mapOf(0 to 10.0, 1 to 40.0, 2 to 30.0, 3 to 20.0)
         )
 
         val extraBlocks = calculateExtraBlocks(level, probabilityConfig)
         val blocksToBreak = (extraBlocks + 1).coerceAtMost(sortedBlocks.size)
 
-        var brokenCount = 0
         var originalBlockWasBroken = false
 
         for (i in 0 until blocksToBreak) {
@@ -85,14 +74,13 @@ class DesabarEnchantment {
 
                 block.breakNaturally(tool)
                 block.world.playEffect(block.location, org.bukkit.Effect.STEP_SOUND, block.type)
-                brokenCount++
             }
         }
 
         player.playSound(player.location, Sound.BLOCK_WOOD_BREAK, 1.0f, 0.8f)
 
         if (!originalBlockWasBroken) {
-            Bukkit.getScheduler().runTaskLater(ItemEvolutionPlugin.instance, Runnable {
+            Bukkit.getScheduler().runTaskLater(plugin, Runnable {
                 brokenBlock.type = originalType
                 brokenBlock.blockData = originalData
             }, 1L)
@@ -104,111 +92,78 @@ class DesabarEnchantment {
         val random = kotlin.random.Random.nextDouble(0.0, 100.0)
 
         var cumulativeProbability = 0.0
-
         for ((extraBlocks, probability) in levelConfig.toList().sortedBy { it.first }) {
             cumulativeProbability += probability
-            if (random <= cumulativeProbability) {
-                return extraBlocks
-            }
+            if (random <= cumulativeProbability) return extraBlocks
         }
-
         return levelConfig.keys.minOrNull() ?: 0
     }
 
-    private fun getTreeWithLeafBridges(startBlock: Block): List<Block> {
+    private fun getTree(startBlock: Block): List<Block> {
+        val world = startBlock.world ?: return emptyList()
+
+        // 1. Localizar a "raiz" descendo até o primeiro tronco conectado ao chão
+        var root = startBlock
+        while (root.y > world.minHeight) {
+            val below = world.getBlockAt(root.x, root.y - 1, root.z)
+            if (WOOD_MATERIALS.contains(below.type)) {
+                root = below
+            } else {
+                break
+            }
+        }
+
         val troncos = mutableListOf<Block>()
-        val visitedTroncos = mutableSetOf<Block>()
-        val visitedFolhas = mutableSetOf<Block>()
-        val queueTroncos: Queue<Block> = LinkedList()
+        val visited = mutableSetOf<Block>()
+        val queue: Queue<Block> = LinkedList()
 
-        queueTroncos.add(startBlock)
-        visitedTroncos.add(startBlock)
+        troncos.add(root)
+        visited.add(root)
+        queue.add(root)
 
-        while (queueTroncos.isNotEmpty() && troncos.size < MAX_TREE_SIZE) {
-            val currentTronco = queueTroncos.poll()
-            troncos.add(currentTronco)
+        while (queue.isNotEmpty() && troncos.size < MAX_TREE_SIZE) {
+            val current = queue.poll()
 
-            // Buscar troncos adjacentes diretos
-            getBlocksAround(currentTronco.location).forEach { nearbyBlock ->
-                if (nearbyBlock !in visitedTroncos &&
-                    WOOD_MATERIALS.contains(nearbyBlock.type) &&
-                    isWithinSearchRadius(startBlock.location, nearbyBlock.location)) {
-
-                    visitedTroncos.add(nearbyBlock)
-                    queueTroncos.add(nearbyBlock)
+            // 2. Buscar troncos adjacentes
+            getBlocksAround(current.location).forEach { nearby ->
+                if (nearby !in visited &&
+                    WOOD_MATERIALS.contains(nearby.type) &&
+                    horizontalDistance(root.location, nearby.location) <= 3 &&
+                    isWithinSearchRadius(root.location, nearby.location)
+                ) {
+                    visited.add(nearby)
+                    troncos.add(nearby)
+                    queue.add(nearby)
                 }
             }
 
-            // Buscar troncos conectados por folhas
-            findTrunksThroughLeaves(currentTronco, startBlock.location, visitedTroncos, visitedFolhas)
-                .forEach { distantTrunk ->
-                    if (distantTrunk !in visitedTroncos) {
-                        visitedTroncos.add(distantTrunk)
-                        queueTroncos.add(distantTrunk)
+            // 3. Buscar via ponte de folhas (restrita)
+            getBlocksAround(current.location).forEach { leaf ->
+                if (LEAF_MATERIALS.contains(leaf.type)) {
+                    getBlocksAround(leaf.location).forEach { maybeTrunk ->
+                        if (maybeTrunk !in visited &&
+                            WOOD_MATERIALS.contains(maybeTrunk.type) &&
+                            maybeTrunk.y >= current.y && // só igual ou acima
+                            horizontalDistance(root.location, maybeTrunk.location) <= 3 &&
+                            isWithinSearchRadius(root.location, maybeTrunk.location)
+                        ) {
+                            visited.add(maybeTrunk)
+                            troncos.add(maybeTrunk)
+                            queue.add(maybeTrunk)
+                        }
                     }
                 }
+            }
         }
 
         return if (troncos.size >= MAX_TREE_SIZE) emptyList() else troncos
     }
 
-    private fun findTrunksThroughLeaves(
-        startTrunk: Block,
-        originalStart: Location,
-        visitedTroncos: MutableSet<Block>,
-        visitedFolhas: MutableSet<Block>
-    ): List<Block> {
-        val foundTrunks = mutableListOf<Block>()
-        val leafQueue: Queue<Block> = LinkedList()
-        val leafVisited = mutableSetOf<Block>()
-
-        // Começar das folhas ao redor do tronco atual (raio 2)
-        getBlocksInRange(startTrunk.location, 2).forEach { block ->
-            if (LEAF_MATERIALS.contains(block.type) && block !in visitedFolhas) {
-                leafQueue.add(block)
-                leafVisited.add(block)
-                visitedFolhas.add(block)
-            }
-        }
-
-        var depth = 0
-        val maxDepth = MAX_LEAF_BRIDGE_DISTANCE
-
-        while (leafQueue.isNotEmpty() && depth < maxDepth) {
-            val currentSize = leafQueue.size
-
-            repeat(currentSize) {
-                val currentLeaf = leafQueue.poll()
-
-                // Procurar troncos ao redor desta folha
-                getBlocksAround(currentLeaf.location).forEach { nearbyBlock ->
-                    if (WOOD_MATERIALS.contains(nearbyBlock.type) &&
-                        nearbyBlock !in visitedTroncos &&
-                        isWithinSearchRadius(originalStart, nearbyBlock.location)) {
-
-                        foundTrunks.add(nearbyBlock)
-                    }
-                }
-
-                // Expandir busca através de folhas conectadas
-                if (depth < maxDepth - 1) {
-                    getBlocksAround(currentLeaf.location).forEach { nearbyBlock ->
-                        if (LEAF_MATERIALS.contains(nearbyBlock.type) &&
-                            nearbyBlock !in leafVisited &&
-                            isWithinSearchRadius(originalStart, nearbyBlock.location)) {
-
-                            leafQueue.add(nearbyBlock)
-                            leafVisited.add(nearbyBlock)
-                            visitedFolhas.add(nearbyBlock)
-                        }
-                    }
-                }
-            }
-            depth++
-        }
-
-        return foundTrunks
+    private fun horizontalDistance(a: Location, b: Location): Int {
+        return maxOf(kotlin.math.abs(a.blockX - b.blockX), kotlin.math.abs(a.blockZ - b.blockZ))
     }
+
+
 
     private fun getBlocksInRange(location: Location, range: Int): List<Block> {
         val blocks = mutableListOf<Block>()
@@ -218,13 +173,7 @@ class DesabarEnchantment {
             for (y in -range..range) {
                 for (z in -range..range) {
                     if (x == 0 && y == 0 && z == 0) continue
-
-                    val block = world.getBlockAt(
-                        location.blockX + x,
-                        location.blockY + y,
-                        location.blockZ + z
-                    )
-                    blocks.add(block)
+                    blocks.add(world.getBlockAt(location.blockX + x, location.blockY + y, location.blockZ + z))
                 }
             }
         }

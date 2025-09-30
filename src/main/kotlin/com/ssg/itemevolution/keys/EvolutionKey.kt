@@ -1,4 +1,4 @@
-package com.ssg.itemevolution
+package com.ssg.itemevolution.keys
 
 import org.bukkit.NamespacedKey
 import org.bukkit.plugin.java.JavaPlugin
@@ -17,19 +17,7 @@ enum class EvolutionKey(val id: String) {
     POINTS("fplus_pontos"),
 
     /** Número total de usos */
-    USES("fplus_usos"),
-
-    /** Lista de encantamentos customizados */
-    CUSTOM_ENCHANTS("custom_enc"),
-
-    /** Níveis dos encantamentos customizados */
-    CUSTOM_ENCHANT_LEVELS("custom_enc_lvl"),
-
-    /** Display names dos encantamentos customizados */
-    CUSTOM_ENCHANT_DISPLAY("custom_enc_display"),
-
-    BREAK_SAVE("break_save");
-
+    USES("fplus_usos");
 
     fun key(plugin: JavaPlugin): NamespacedKey = NamespacedKey(plugin, id)
 }

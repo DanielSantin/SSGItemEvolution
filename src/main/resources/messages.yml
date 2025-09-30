@@ -1,0 +1,30 @@
+messages:
+  prefix: "§4[SSG] §2"
+
+  # Mensagens de erro
+  errors:
+    invalid-tool: "Você precisa usar uma ferramenta válida na mão para acessar isso"
+    no-soul: "Esta ferramenta não possui alma! Use um Cristal da Alma primeiro."
+    no-upgrades: "Nenhuma melhoria disponível para este item"
+    insufficient-points: "Pontos insuficientes para este encantamento!"
+    max-level: "Este encantamento já está no nível máximo!"
+
+  # Mensagens de sucesso
+  success:
+    soul-added: "Alma adicionada à ferramenta com sucesso!"
+    item-upgraded: "Item aprimorado com sucesso!"
+    item-repaired: "Item reparado com sucesso!"
+    enchant-added: "Encantamento aplicado com sucesso!"
+
+  # Mensagens informativas
+  info:
+    level-up: "§6✦ §eItem evoluiu para o nível %level%! §6✦"
+    points-gained: "§a+%points% pontos de evolução!"
+    enchant-hint: "§7Agache para ativar o §6§l%enchant%"
+
+  # Action bar messages
+  actionbar:
+    critical-hit: "§c§lDANO CRÍTICO!"
+    healing: "§a+%.1f §c❤"
+    extra-xp: "§b+%xp% XP extra!"
+    enchant-activated: "§6%enchant% §7ativado! (Nv.%level%)"
