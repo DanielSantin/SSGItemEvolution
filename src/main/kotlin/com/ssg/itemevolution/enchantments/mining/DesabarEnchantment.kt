@@ -1,7 +1,7 @@
 package com.ssg.itemevolution.enchantments.mining
 
 import com.ssg.itemevolution.ItemEvolutionPlugin
-import com.ssg.itemevolution.services.ItemRepairService.applyDurabilityDamage
+import com.ssg.itemevolution.services.ItemRepairService
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -13,7 +13,8 @@ import org.bukkit.Sound
 import java.util.*
 
 class DesabarEnchantment (
-    private val plugin: ItemEvolutionPlugin
+    private val plugin: ItemEvolutionPlugin,
+    private val itemRepairService: ItemRepairService
 ) {
     companion object {
         private const val MAX_TREE_SIZE = 200
@@ -73,7 +74,7 @@ class DesabarEnchantment (
                     originalBlockWasBroken = true
                 }
 
-                applyDurabilityDamage(tool)
+                itemRepairService.applyDurabilityDamage(tool)
                 block.breakNaturally(tool)
                 block.world.playEffect(block.location, org.bukkit.Effect.STEP_SOUND, block.type)
             }

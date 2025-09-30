@@ -1,7 +1,7 @@
 package com.ssg.itemevolution.enchantments.mining
 
 import com.ssg.itemevolution.ItemEvolutionPlugin
-import com.ssg.itemevolution.services.ItemRepairService.applyDurabilityDamage
+import com.ssg.itemevolution.services.ItemRepairService
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -14,7 +14,8 @@ import java.util.*
 import kotlin.math.sqrt
 
 class VeinMiningEnchantment(
-    private val plugin: ItemEvolutionPlugin
+    private val plugin: ItemEvolutionPlugin,
+    private val itemRepairService: ItemRepairService
 ) {
     companion object {
         private const val MAX_VEIN_SIZE = 200
@@ -86,7 +87,7 @@ class VeinMiningEnchantment(
                     originalBlockWasBroken = true
                 }
 
-                applyDurabilityDamage(tool)
+                itemRepairService.applyDurabilityDamage(tool)
                 block.breakNaturally(tool)
 
                 // Efeito visual baseado no tipo de material

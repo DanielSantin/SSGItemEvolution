@@ -1,7 +1,6 @@
 package com.ssg.itemevolution.enchantments.mining
 
-import com.ssg.itemevolution.ItemEvolutionPlugin
-import com.ssg.itemevolution.services.ItemRepairService.applyDurabilityDamage
+import com.ssg.itemevolution.services.ItemRepairService
 import org.bukkit.Sound
 import org.bukkit.block.Block
 import org.bukkit.block.BlockFace
@@ -9,14 +8,14 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
 class AreaMiningEnchantment(
-    private val plugin: ItemEvolutionPlugin
+    private val itemRepairService: ItemRepairService
 ) {
     fun executeAreaMining(player: Player, brokenBlock: Block, tool: ItemStack, level: Int, face: BlockFace) {
         val blocksToBreak = getBlocksToBreak(brokenBlock, face, level)
 
         for (block in blocksToBreak) {
             if (block.type.isAir) continue
-            applyDurabilityDamage(tool)
+            itemRepairService.applyDurabilityDamage(tool)
             block.breakNaturally(tool)
             block.world.playSound(block.location, Sound.BLOCK_STONE_BREAK, 0.5f, 1.0f)
         }
