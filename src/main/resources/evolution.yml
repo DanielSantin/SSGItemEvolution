@@ -1,0 +1,38 @@
+evolution:
+  # Multiplicador base para cálculo de evolução
+  base-multiplier: 1.0
+
+  # Expoente usado no cálculo de nível
+  level-exponent: 0.75
+
+  # Multiplicador específico para armaduras
+  armor-multiplier: 0.25
+
+  # Nível máximo que um item pode atingir
+  max-level: 100
+
+  # Configurações de pontos por tipo de ferramenta
+  points:
+    wood: 2
+    stone: 3
+    iron: 4
+    diamond: 5
+    netherite: 6
+    gold: 6
+    leather: 2
+    chainmail: 3
+    bow: 2
+    shield: 2
+    crossbow: 2
+
+# Configurações de materiais especiais
+materials:
+  # Materiais que não podem ser aprimorados
+  blacklisted: []
+
+  # Materiais que requerem configuração especial
+  special-cases:
+    bow:
+      evolution-type: "ranged"
+    shield:
+      evolution-type: "defense"

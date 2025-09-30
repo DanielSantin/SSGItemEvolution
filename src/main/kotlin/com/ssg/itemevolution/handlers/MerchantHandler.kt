@@ -1,76 +1,63 @@
-package com.ssg.itemevolution
+package com.ssg.itemevolution.handlers
 
 import com.nexomc.nexo.api.NexoItems
-import com.ssg.itemevolution.EnchantmentHandler.getEnchantmentLevel
-import com.ssg.itemevolution.ItemUtils.getUpgradeItemstack
+import com.ssg.itemevolution.ItemEvolutionPlugin
+import com.ssg.itemevolution.utils.ItemUtils
+import com.ssg.itemevolution.utils.ConfigManager
+import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.isItemBroken
+import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.removeBrokenItemMark
+import com.ssg.itemevolution.services.EnchantmentService
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.NamespacedKey
 import org.bukkit.Sound
+import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.MerchantRecipe
 import org.bukkit.inventory.meta.Damageable
-import org.bukkit.persistence.PersistentDataType
-import org.bukkit.NamespacedKey
-import org.bukkit.enchantments.Enchantment
-import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.meta.EnchantmentStorageMeta
+import org.bukkit.persistence.PersistentDataType
 
-object MerchantHandler {
+class MerchantHandler(
+    private val plugin: ItemEvolutionPlugin,
+    private val itemUtils: ItemUtils,
+    private val configManager: ConfigManager,
+    private val enchantmentService: EnchantmentService
+) {
+    private val toolItemKey = NamespacedKey(plugin, "tool_item")
 
-    private val pluginInstance = ItemEvolutionPlugin.instance
-    private val toolItemKey = NamespacedKey(pluginInstance, "tool_item")
 
     fun openMerchant(player: Player, tool: ItemStack) {
-        if (!ItemUtils.isValidTool(tool)) {
+        if (!itemUtils.isValidTool(tool)) {
             player.sendMessage("§4[SSG] §2Você precisa usar uma ferramenta válida na mão para acessar isso")
             return
         }
 
         val trades = mutableListOf<MerchantRecipe>()
+        val isItemBroken = isItemBroken(tool)
+        val repairCostMultiplier = if (isItemBroken) 2 else 1
+        addRepairTrade(tool, trades, repairCostMultiplier)
 
-        // Trade de upgrade
-        val upgradeItemStack = getUpgradeItemstack(tool)
-        if (upgradeItemStack != null) {
-            val upgradedTool = ItemUtils.improveItem(tool)
-            val upgradeRecipe = MerchantRecipe(upgradedTool, 999)
-            upgradeRecipe.addIngredient(tool)
-            upgradeRecipe.addIngredient(upgradeItemStack)
-            trades.add(upgradeRecipe)
+        if(!isItemBroken){
+            addUpgradeTrades(tool, trades)
+            addEnchantmentTrades(tool, trades)
         }
-
-        // Trade de reparo
-        val repairMaterial = ItemUtils.getRepairMaterial(tool)
-        if (repairMaterial != null) {
-            val meta = tool.itemMeta as? Damageable
-            if (meta != null && meta.damage > 0) {
-                val repairCost = ItemUtils.getRepairCost(tool)
-                val repairItems = ItemStack(repairMaterial, repairCost)
-                val repairedTool = tool.clone()
-                val repairedMeta = repairedTool.itemMeta as Damageable
-                repairedMeta.damage = 0
-                repairedTool.itemMeta = repairedMeta
-
-                val repairRecipe = MerchantRecipe(repairedTool, 999)
-                repairRecipe.addIngredient(tool)
-                repairRecipe.addIngredient(repairItems)
-                trades.add(repairRecipe)
-            }
-        }
-
-        // Trades de encantamentos
-        addEnchantmentTrades(tool, trades)
 
         if (trades.isEmpty()) {
             player.sendMessage("§4[SSG] §2Nenhuma melhoria disponível para este item")
             return
         }
 
-        val title = ItemEvolutionPlugin.instance.config.getString("merchant-title") ?: "Mercador"
+        // 🔹 Carregar merchant.yml e pegar título
+        val merchantConfig = configManager.getCustomConfig("merchant.yml")
+        val title = merchantConfig?.getString("merchant.title") ?: "Mercador"
+
         val merchant = Bukkit.createMerchant(Component.text(title))
         merchant.recipes = trades
 
@@ -78,24 +65,59 @@ object MerchantHandler {
         player.playSound(player.location, Sound.ITEM_ARMOR_EQUIP_LEATHER, 1.0f, 2.0f)
     }
 
+    private fun addRepairTrade(tool: ItemStack, trades: MutableList<MerchantRecipe>, repairCostMultiplier: Int = 1) {
+        val repairMaterial = itemUtils.getRepairMaterial(tool)
+        if (repairMaterial != null) {
+            val meta = tool.itemMeta as? Damageable
+            if (meta != null && meta.damage > 0) {
+                val repairCost = itemUtils.getRepairCost(tool) * repairCostMultiplier
+                val repairItems = ItemStack(repairMaterial, repairCost)
+                val repairedTool = tool.clone()
+                removeBrokenItemMark(repairedTool)
+                val repairedMeta = repairedTool.itemMeta as Damageable
+                repairedMeta.damage = 0
+                repairedTool.itemMeta = repairedMeta
+
+
+                val repairRecipe = MerchantRecipe(repairedTool, 999)
+                repairRecipe.addIngredient(tool)
+                repairRecipe.addIngredient(repairItems)
+                trades.add(repairRecipe)
+            }
+        }
+    }
+
+    private fun addUpgradeTrades(tool: ItemStack, trades: MutableList<MerchantRecipe>) {
+        val upgradeItemStack = itemUtils.getUpgradeItemstack(tool)
+        if (upgradeItemStack != null) {
+            val upgradedTool = itemUtils.improveItem(tool)
+            val upgradeRecipe = MerchantRecipe(upgradedTool, 999)
+            upgradeRecipe.addIngredient(tool)
+            upgradeRecipe.addIngredient(upgradeItemStack)
+            trades.add(upgradeRecipe)
+        }
+    }
+
     private fun addEnchantmentTrades(tool: ItemStack, trades: MutableList<MerchantRecipe>) {
-        val config = ItemEvolutionPlugin.evolutionsConfig ?: return
-        val toolType = ItemUtils.testTool(tool)
+        val config = configManager.getCustomConfig("enchantments.yml") ?: return
+        val toolType = itemUtils.testTool(tool)
 
-        if (!config.contains("bie.encantamentos")) return
+        if (!config.contains("enchantments")) return
 
-        val enchantments = config.getConfigurationSection("bie.encantamentos")?.getKeys(false) ?: return
+        val enchantments = config.getConfigurationSection("enchantments")?.getKeys(false) ?: return
+
+        // Lista de encantos permitidos pra essa ferramenta
+        val allowedEnchantments = config.getStringList("tool-compatibility.$toolType")
 
         for (enchantName in enchantments) {
-            val enchantSection = config.getConfigurationSection("bie.encantamentos.$enchantName") ?: continue
+            if (!allowedEnchantments.contains(enchantName)) continue
 
-            // Verificar se a ferramenta pode usar este encantamento
-            if (!config.getBoolean("bie.ferramentas.$toolType.$enchantName", false)) continue
+            val enchantSection = config.getConfigurationSection("enchantments.$enchantName") ?: continue
 
-            val costPoints = enchantSection.getIntegerList("custopontos")
-            val costItems = enchantSection.getStringList("custoitem")
+            val costPoints = enchantSection.getIntegerList("point-costs")
+            val costItems = enchantSection.getStringList("item-costs")
 
-            val currentLevel = getEnchantmentLevel(tool, enchantName)
+            val currentLevel = enchantmentService.getEnchantmentLevel(tool, enchantName)
             val nextLevel = currentLevel + 1
 
             if (nextLevel > costPoints.size) continue // Nível máximo atingido
@@ -117,14 +139,14 @@ object MerchantHandler {
                 try {
                     val itemBuilder = NexoItems.itemFromId(itemId)
                     if (itemBuilder == null) {
-                        pluginInstance.logger.warning("ID do Nexo inválido: $itemId")
+                        plugin.logger.warning("ID do Nexo inválido: $itemId")
                         continue
                     }
                     val itemStack = itemBuilder.build()
                     itemStack.amount = quantity.coerceAtLeast(1).coerceAtMost(itemStack.maxStackSize)
                     itemStack
                 } catch (e: Exception) {
-                    pluginInstance.logger.warning("Erro ao criar item Nexo ($itemId): ${e.message}")
+                    plugin.logger.warning("Erro ao criar item Nexo ($itemId): ${e.message}")
                     continue
                 }
             } else {
@@ -144,10 +166,10 @@ object MerchantHandler {
             }
 
             // Aplicar encantamento usando o novo sistema
-            val enchantedTool = EnchantmentHandler.enchantItem(tool, enchantName, nextLevel)
+            val enchantedTool = enchantmentService.enchantItem(tool, enchantName, nextLevel)
 
             // Reduzir pontos apenas se teve sucesso
-            if (EnchantmentHandler.hasEnchantment(enchantedTool, enchantName)) {
+            if (enchantmentService.hasEnchantment(enchantedTool, enchantName)) {
                 reducePoints(enchantedTool, requiredPoints)
             }
 
@@ -161,14 +183,14 @@ object MerchantHandler {
     private fun getCurrentPoints(tool: ItemStack): Int {
         val meta = tool.itemMeta ?: return 0
         val container = meta.persistentDataContainer
-        val pointsKey = NamespacedKey(pluginInstance, "fplus_pontos")
+        val pointsKey = NamespacedKey(plugin, "fplus_pontos")
         return container.get(pointsKey, PersistentDataType.INTEGER) ?: 0
     }
 
     private fun reducePoints(tool: ItemStack, points: Int) {
         val meta = tool.itemMeta ?: return
         val container = meta.persistentDataContainer
-        val pointsKey = NamespacedKey(pluginInstance, "fplus_pontos")
+        val pointsKey = NamespacedKey(plugin, "fplus_pontos")
 
         val currentPoints = container.get(pointsKey, PersistentDataType.INTEGER) ?: 0
         container.set(pointsKey, PersistentDataType.INTEGER, maxOf(0, currentPoints - points))

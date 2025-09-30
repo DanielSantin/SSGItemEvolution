@@ -17,6 +17,7 @@ dependencies {
     compileOnly("com.nexomc:nexo:1.10.0") //Nexo 1.X -> 1.X.0
     implementation(kotlin("stdlib"))
     implementation("org.apache.commons:commons-lang3:3.18.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
 }
 
 java {
@@ -24,11 +25,21 @@ java {
 }
 
 tasks {
-    // Faz o artefato final ser o sombreado (sem o sufixo -l)
+    // Faz o artefato final ser o sombreado (sem o sufixo -all)
     shadowJar {
         archiveBaseName.set("SSGItemEvolution") // nome do jar
         archiveClassifier.set("")
+
+        // Após gerar o jar, copia pro servidor de testes
+        doLast {
+            copy {
+                from(archiveFile)
+                into("C:/Users/Demarky/Documents/ServerLeve/plugins")
+            }
+            println("✅ Plugin copiado para a pasta do servidor de testes!")
+        }
     }
+
     build {
         dependsOn(shadowJar)
     }

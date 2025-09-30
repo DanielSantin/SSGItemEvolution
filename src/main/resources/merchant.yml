@@ -1,0 +1,44 @@
+merchant:
+  # Título da interface do merchant
+  title: "§6§lMercador de Melhorias"
+
+  # Máximo de trades por merchant
+  max-trades: 999
+
+  # Configurações de funcionalidades
+  features:
+    upgrade-enabled: true
+    repair-enabled: true
+    enchant-enabled: true
+
+  # Configurações de custos
+  costs:
+    # Multiplicador de custo para reparos
+    repair-cost-multiplier: 1.0
+
+    # Custo base para upgrades por material
+    upgrade-costs:
+      wood-to-stone:
+        material: "cobblestone"
+        quantity: 8
+      stone-to-iron:
+        material: "iron_ingot"
+        quantity: 6
+      iron-to-diamond:
+        material: "diamond"
+        quantity: 4
+      diamond-to-netherite:
+        material: "netherite_ingot"
+        quantity: 1
+
+  # Configurações visuais
+  gui:
+    upgrade-slot: 0
+    repair-slot: 1
+    enchant-start-slot: 2
+
+  # Sons reproduzidos
+  sounds:
+    open: "ITEM_ARMOR_EQUIP_LEATHER"
+    trade-success: "ENTITY_VILLAGER_YES"
+    trade-fail: "ENTITY_VILLAGER_NO"
