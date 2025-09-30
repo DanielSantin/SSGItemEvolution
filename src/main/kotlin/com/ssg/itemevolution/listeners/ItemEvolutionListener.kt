@@ -1,6 +1,7 @@
 package com.ssg.itemevolution.listeners
 
 import com.ssg.itemevolution.ItemEvolutionPlugin
+import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.isItemBroken
 import com.ssg.itemevolution.handlers.EnchantmentEventResult
 import com.ssg.itemevolution.handlers.EnchantmentEventType
 import com.ssg.itemevolution.handlers.EventBuilder
@@ -168,70 +169,88 @@ class ItemEvolutionListener(
         originalEvent: Any? = null
     ) {
         if (!soulToolService.hasSoul(tool)) return
-
         val enchantments = enchantmentService.listEnchantments(tool)
-        plugin.logger.info("Processando encantamentos para ${tool.type}: ${enchantments.keys}")
 
-        for ((enchantKey, level) in enchantments) {
-            plugin.logger.info("Processando encantamento: $enchantKey (nível $level)")
-
-            val context = mutableMapOf<String, Any>(
-                "player" to player,
-                "item" to tool,
-                "target" to target
-            )
-
+        // PASSO 1: Disparar o evento BEFORE_USE para todos os encantamentos
+        // O EternaHandler já irá lidar com a verificação de item quebrado
+        val preEventContext = mutableMapOf<String, Any>(
+            "player" to player,
+            "item" to tool,
+            "target" to target
+        ).also { context ->
             when (eventType) {
                 EnchantmentEventType.BLOCK_BREAK -> context["breakEvent"] = originalEvent!!
                 EnchantmentEventType.ENTITY_DAMAGE -> context["damageEvent"] = originalEvent!!
                 else -> {}
             }
+        }
 
-            // 1. SEMPRE dispara BEFORE_USE primeiro
-            plugin.logger.info("Disparando BEFORE_USE para $enchantKey")
+        for ((enchantKey, level) in enchantments) {
             val beforeEvent = EventBuilder.enchantment(enchantKey, level, EnchantmentEventType.BEFORE_USE)
                 .player(player)
                 .item(tool)
-                .apply { context.forEach { (key, value) -> context(key, value) } }
+                .apply { preEventContext.forEach { (key, value) -> context(key, value) } }
                 .build()
 
             val beforeResult = eventManager.fireEnchantmentEvent(beforeEvent)
-            plugin.logger.info("Resultado BEFORE_USE para $enchantKey: $beforeResult")
 
             if (beforeResult == EnchantmentEventResult.CANCELLED) {
-                plugin.logger.info("Evento cancelado pelo BEFORE_USE - parando processamento")
-                // Se for cancelado, cancela o evento original e para tudo
                 if (originalEvent is org.bukkit.event.Cancellable) {
                     originalEvent.isCancelled = true
-                    plugin.logger.info("Evento original cancelado")
                 }
-                return // Para TUDO se algum encantamento cancelar
+                return // Para TUDO
             }
+        }
 
-            // 2. Se não foi cancelado, dispara o evento principal
-            plugin.logger.info("Disparando evento principal: $eventType para $enchantKey")
+        // Se o evento não foi cancelado, procede para a lógica principal
+        val mainEventContext = mutableMapOf<String, Any>(
+            "player" to player,
+            "item" to tool,
+            "target" to target
+        ).also { context ->
+            when (eventType) {
+                EnchantmentEventType.BLOCK_BREAK -> context["breakEvent"] = originalEvent!!
+                EnchantmentEventType.ENTITY_DAMAGE -> context["damageEvent"] = originalEvent!!
+                else -> {}
+            }
+        }
+
+        // PASSO 2: Disparar o evento principal (BLOCK_BREAK ou ENTITY_DAMAGE)
+        // Isso deve ser feito para todos os encantamentos aplicáveis.
+        // O seu `EnchantmentEventHandlers` já contém a lógica para cada tipo.
+        for ((enchantKey, level) in enchantments) {
             val mainEvent = EventBuilder.enchantment(enchantKey, level, eventType)
                 .player(player)
                 .item(tool)
-                .apply { context.forEach { (key, value) -> context(key, value) } }
+                .apply { mainEventContext.forEach { (key, value) -> context(key, value) } }
                 .build()
 
-            val mainResult = eventManager.fireEnchantmentEvent(mainEvent)
-            plugin.logger.info("Resultado evento principal para $enchantKey: $mainResult")
+            eventManager.fireEnchantmentEvent(mainEvent)
+        }
 
-            // 3. Sempre dispara AFTER_USE no final (independente do resultado principal)
-            plugin.logger.info("Disparando AFTER_USE para $enchantKey")
+        // PASSO 3: Disparar o evento AFTER_USE para todos os encantamentos
+        // O EternaHandler irá verificar a durabilidade após o evento principal
+        val postEventContext = mutableMapOf<String, Any>(
+            "player" to player,
+            "item" to tool,
+            "target" to target
+        ).also { context ->
+            when (eventType) {
+                EnchantmentEventType.BLOCK_BREAK -> context["breakEvent"] = originalEvent!!
+                EnchantmentEventType.ENTITY_DAMAGE -> context["damageEvent"] = originalEvent!!
+                else -> {}
+            }
+        }
+
+        for ((enchantKey, level) in enchantments) {
             val afterEvent = EventBuilder.enchantment(enchantKey, level, EnchantmentEventType.AFTER_USE)
                 .player(player)
                 .item(tool)
-                .apply { context.forEach { (key, value) -> context(key, value) } }
+                .apply { postEventContext.forEach { (key, value) -> context(key, value) } }
                 .build()
 
-            val afterResult = eventManager.fireEnchantmentEvent(afterEvent)
-            plugin.logger.info("Resultado AFTER_USE para $enchantKey: $afterResult")
+            eventManager.fireEnchantmentEvent(afterEvent)
         }
-
-        plugin.logger.info("Processamento de encantamentos concluído")
     }
 
     private fun processArmorDamage(player: Player, damageEvent: EntityDamageEvent) {

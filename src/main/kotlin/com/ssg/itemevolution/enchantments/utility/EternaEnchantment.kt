@@ -51,7 +51,7 @@ class EternaEnchantment() {
 
         // Se a durabilidade está quase no limite e não está marcada como quebrada
         if (meta.damage >= maxDurability - 2 && !isItemBroken(item)) {
-            meta.damage = maxDurability - 2
+            meta.damage = maxDurability - 1
             item.itemMeta = meta
             markItemAsBroken(item, player)
             return true
