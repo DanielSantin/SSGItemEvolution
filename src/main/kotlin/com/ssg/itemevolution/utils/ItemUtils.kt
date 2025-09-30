@@ -1,6 +1,5 @@
 package com.ssg.itemevolution.utils
 
-import com.ssg.itemevolution.ItemEvolutionPlugin
 import com.ssg.itemevolution.services.*
 import com.ssg.itemevolution.ui.ItemDescriptionFormatter
 import net.kyori.adventure.text.Component
@@ -15,49 +14,47 @@ import org.bukkit.inventory.ItemStack
  * operações relacionadas a itens de evolução.
  */
 class ItemUtils(
-    plugin: ItemEvolutionPlugin,
-    configManager: ConfigManager
+    private val itemDataService: ItemDataService,
+    private val itemEvolutionService: ItemEvolutionService,
+    private val descriptionFormatter: ItemDescriptionFormatter,
+    private val itemRepairService: ItemRepairService,
+    private val materialUpgradeService: MaterialUpgradeService
 ) {
-    // Serviços especializados
-    private val itemDataService = ItemDataService(plugin)
-    private val evolutionService = ItemEvolutionService(plugin, configManager, itemDataService)
-    private val descriptionFormatter = ItemDescriptionFormatter(itemDataService, evolutionService)
-
     // ===== MÉTODOS PÚBLICOS - COMPATIBILIDADE LEGADA =====
 
     /**
      * Retorna o nome da categoria da ferramenta (sword, pickaxe, etc.)
      */
     fun testTool(item: ItemStack?): String {
-        return evolutionService.getToolCategoryName(item)
+        return itemEvolutionService.getToolCategoryName(item)
     }
 
     /**
      * Verifica se o item é uma ferramenta/armadura válida
      */
     fun isValidTool(item: ItemStack?): Boolean {
-        return evolutionService.isValidTool(item)
+        return itemEvolutionService.isValidTool(item)
     }
 
     /**
      * Configura um item novo com dados de evolução
      */
     fun setupItem(item: ItemStack): ItemStack {
-        return evolutionService.setupItem(item)
+        return itemEvolutionService.setupItem(item)
     }
 
     /**
      * Atualiza o item após uso (incrementa contador e verifica level up)
      */
     fun upgradeItem(item: ItemStack): ItemStack {
-        return evolutionService.upgradeItem(item)
+        return itemEvolutionService.upgradeItem(item)
     }
 
     /**
      * Melhora o item para o próximo material (ferro -> diamante, etc.)
      */
     fun improveItem(item: ItemStack): ItemStack {
-        return evolutionService.improveItem(item)
+        return itemEvolutionService.improveItem(item)
     }
 
     // ===== MÉTODOS DE ACESSO A DADOS =====
@@ -66,14 +63,14 @@ class ItemUtils(
      * Obtém o nível atual do item
      */
     fun getItemLevel(item: ItemStack): Int {
-        return itemDataService.getLevel(item)
+        return itemEvolutionService.calculateLevelFromItem(item)
     }
 
     /**
      * Define o nível do item
      */
     fun setItemLevel(item: ItemStack, level: Int) {
-        itemDataService.setLevel(item, level)
+        itemEvolutionService.setLevel(item, level)
     }
 
     /**
@@ -136,7 +133,7 @@ class ItemUtils(
      * Calcula o progresso até o próximo nível (0.0 a 1.0)
      */
     fun getLevelProgress(item: ItemStack): Double {
-        return evolutionService.getLevelProgress(item)
+        return itemEvolutionService.getLevelProgress(item)
     }
 
     // ===== MÉTODOS DE UI/FORMATAÇÃO =====
@@ -159,7 +156,7 @@ class ItemUtils(
      * Gera barra de progresso visual
      */
     fun getProgressBar(item: ItemStack, length: Int = 20): String {
-        val progress = evolutionService.getLevelProgress(item)
+        val progress = itemEvolutionService.getLevelProgress(item)
         return descriptionFormatter.getProgressBar(progress, length)
     }
 
@@ -169,42 +166,42 @@ class ItemUtils(
      * Calcula o custo de reparo em materiais
      */
     fun getRepairCost(item: ItemStack): Int {
-        return ItemRepairService.getRepairCost(item)
+        return itemRepairService.getRepairCost(item)
     }
 
     /**
      * Obtém o material necessário para reparar
      */
     fun getRepairMaterial(item: ItemStack): Material? {
-        return ItemRepairService.getRepairMaterial(item)
+        return itemRepairService.getRepairMaterial(item)
     }
 
     /**
      * Repara o item completamente
      */
     fun repairItem(item: ItemStack) {
-        ItemRepairService.repairItem(item)
+        itemRepairService.repairItem(item)
     }
 
     /**
      * Repara o item parcialmente
      */
     fun repairItem(item: ItemStack, amount: Int) {
-        ItemRepairService.repairItem(item, amount)
+        itemRepairService.repairItem(item, amount)
     }
 
     /**
      * Verifica se o item precisa de reparo
      */
     fun needsRepair(item: ItemStack): Boolean {
-        return ItemRepairService.needsRepair(item)
+        return itemRepairService.needsRepair(item)
     }
 
     /**
      * Obtém a porcentagem de durabilidade restante
      */
     fun getDurabilityPercentage(item: ItemStack): Double {
-        return ItemRepairService.getDurabilityPercentage(item)
+        return itemRepairService.getDurabilityPercentage(item)
     }
 
     // ===== MÉTODOS DE UPGRADE DE MATERIAL =====
@@ -213,28 +210,28 @@ class ItemUtils(
      * Obtém o material necessário para upgrade
      */
     fun getUpgradeMaterial(item: ItemStack): Material? {
-        return MaterialUpgradeService.getUpgradeMaterial(item)
+        return materialUpgradeService.getUpgradeMaterial(item)
     }
 
     /**
      * Obtém a quantidade de material necessária para upgrade
      */
     fun getMaterialQuantity(item: ItemStack): Int {
-        return MaterialUpgradeService.getUpgradeMaterialQuantity(item)
+        return materialUpgradeService.getUpgradeMaterialQuantity(item)
     }
 
     /**
      * Retorna o ItemStack completo necessário para upgrade
      */
     fun getUpgradeItemstack(item: ItemStack): ItemStack? {
-        return MaterialUpgradeService.getUpgradeItemStack(item)
+        return materialUpgradeService.getUpgradeItemStack(item)
     }
 
     /**
      * Verifica se o item pode ser melhorado
      */
     fun canBeUpgraded(item: ItemStack): Boolean {
-        return MaterialUpgradeService.canBeUpgraded(item)
+        return materialUpgradeService.canBeUpgraded(item)
     }
 
     // ===== MÉTODOS AUXILIARES =====

@@ -1,5 +1,7 @@
 package com.ssg.itemevolution.handlers
 
+import com.ssg.itemevolution.services.ItemDataService
+import com.ssg.itemevolution.services.ItemEvolutionService
 import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.utils.ConfigManager
 import com.ssg.itemevolution.utils.ItemUtils
@@ -11,6 +13,7 @@ import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 
 /**
  * Handler centralizado para todos os comandos do plugin
@@ -18,7 +21,9 @@ import org.bukkit.entity.Player
 class CommandHandler(
     private val configManager: ConfigManager,
     private val itemUtils: ItemUtils,
-    private val soulToolService: SoulToolService
+    private val soulToolService: SoulToolService,
+    private val itemDataService: ItemDataService,
+    private val itemEvolutionService: ItemEvolutionService
 ) : CommandExecutor, TabCompleter {
 
     override fun onCommand(
@@ -42,6 +47,8 @@ class CommandHandler(
             "addpoints" -> handleAddPoints(sender, args)
             "debug" -> handleDebug(sender, args)
             "help" -> sendHelp(sender)
+            "migrate" -> handleMigrate(sender)
+            "setcounter" -> handleSetCounter(sender, args)
             else -> {
                 sender.sendMessage("§cComando inválido. Use §6/ssgitemevolution help §cpara ver os comandos disponíveis.")
                 return true
@@ -64,7 +71,7 @@ class CommandHandler(
 
         when (args.size) {
             1 -> {
-                val subcommands = listOf("reload", "info", "addsoul", "removesoul", "setlevel", "addpoints", "enchant", "debug", "help")
+                val subcommands = listOf("reload", "info", "addsoul", "removesoul", "setlevel", "addpoints", "enchant", "debug", "help", "migrate", "setcounter", "setabsolutecounter")
                 completions.addAll(subcommands.filter { it.startsWith(args[0].lowercase()) })
             }
             2 -> {
@@ -76,6 +83,9 @@ class CommandHandler(
                         completions.addAll(listOf("item", "enchants", "config").filter {
                             it.startsWith(args[1].lowercase())
                         })
+                    }
+                    "migrate" -> {
+                        completions.addAll(listOf("armor").filter { it.startsWith(args[1].lowercase()) })
                     }
                 }
             }
@@ -129,6 +139,9 @@ class CommandHandler(
         val level = itemUtils.getItemLevel(item)
         val points = itemUtils.getItemPoints(item)
         val uses = itemUtils.getItemUses(item)
+        val counterForActualLevel = itemEvolutionService.calculateCounterForLevel(level, item)
+        val actualCounter = itemUtils.getItemCounter(item) - counterForActualLevel
+        val neededCounter = itemEvolutionService.calculateCounterForLevel(level + 1, item) - counterForActualLevel
 
         sender.sendMessage("§6§l=== INFORMAÇÕES DO ITEM ===")
         sender.sendMessage("§7Tipo: §f${item.type.name}")
@@ -138,6 +151,7 @@ class CommandHandler(
             sender.sendMessage("§7Nível: §e$level")
             sender.sendMessage("§7Pontos: §b$points")
             sender.sendMessage("§7Usos: §d$uses")
+            sender.sendMessage("§7Contador: §d$actualCounter / $neededCounter")
         }
     }
 
@@ -332,6 +346,7 @@ class CommandHandler(
             sender.sendMessage("§e/ssgitemevolution setlevel <nível> §7- Define nível do item")
             sender.sendMessage("§e/ssgitemevolution addpoints <pontos> §7- Adiciona pontos ao item")
             sender.sendMessage("§e/ssgitemevolution enchant <encanto> <nível> §7- Aplica encantamento")
+
         }
 
         if (sender.hasPermission("ssgitemevolution.debug")) {
@@ -340,4 +355,72 @@ class CommandHandler(
 
         sender.sendMessage("§e/ssgitemevolution help §7- Mostra esta ajuda")
     }
+
+    // Função temporária que faz a atualização de um item
+    fun updateTool(item: ItemStack) {
+        val meta = item.itemMeta ?: return
+        meta.lore(null)
+        item.itemMeta = meta
+        itemDataService.setSoulTool(item, true)
+    }
+
+    private fun handleMigrate(sender: CommandSender, args: Array<out String> = emptyArray()) {
+        if (!sender.hasPermission("ssgitemevolution.admin")) {
+            sender.sendMessage("§cVocê não tem permissão para usar este comando.")
+            return
+        }
+
+        if (sender !is Player) {
+            sender.sendMessage("§cEste comando só pode ser usado por jogadores.")
+            return
+        }
+
+        if (args.isNotEmpty() && args[1].lowercase() == "armor") {
+            val armorContents = sender.inventory.armorContents
+            var migratedCount = 0
+
+            armorContents.forEachIndexed { index, item ->
+                if (item == null || item.type == Material.AIR) return@forEachIndexed
+                updateTool(item)
+                migratedCount++
+            }
+
+            sender.sendMessage("§a[SSG] $migratedCount peças de armadura migradas para o novo sistema com sucesso!")
+            return
+        }
+
+        // Caso padrão: apenas a ferramenta na mão
+        val item = sender.inventory.itemInMainHand
+        if (item.type == Material.AIR) {
+            sender.sendMessage("§cVocê precisa estar segurando um item na mão.")
+            return
+        }
+
+        updateTool(item)
+        sender.sendMessage("§a[SSG] Item migrado para o novo sistema com sucesso!")
+    }
+
+    private fun handleSetCounter(sender: CommandSender, args: Array<out String> = emptyArray()) {
+        if (!sender.hasPermission("ssgitemevolution.admin")) {
+            sender.sendMessage("§cVocê não tem permissão para usar este comando.")
+            return
+        }
+
+        if (sender !is Player) {
+            sender.sendMessage("§cEste comando só pode ser usado por jogadores.")
+            return
+        }
+
+        val counter = args[1].toIntOrNull()
+        if (counter == null || counter < 0) {
+            sender.sendMessage("§cVocê precisa passar um valor inteiro positivo para o contador.")
+            return
+        }
+        val item = sender.inventory.itemInMainHand
+        itemEvolutionService.setCounterBasedOnLevel(item, counter)
+
+    }
+
+
+
 }

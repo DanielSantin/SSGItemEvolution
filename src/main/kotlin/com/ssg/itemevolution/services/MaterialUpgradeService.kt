@@ -13,7 +13,9 @@ import org.bukkit.inventory.ItemStack
  * Couro → Ferro (armadura)
  * Cota de Malha → Ferro
  */
-object MaterialUpgradeService {
+class MaterialUpgradeService(
+
+) {
 
     /**
      * Mapa que define a cadeia de upgrades de materiais.

@@ -2,9 +2,7 @@ package com.ssg.itemevolution.services
 
 import com.ssg.itemevolution.keys.ToolType
 import org.bukkit.Material
-import org.bukkit.Sound
 import org.bukkit.enchantments.Enchantment
-import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.Damageable
 import kotlin.math.ceil
@@ -14,8 +12,8 @@ import kotlin.math.ceil
  *
  * Gerencia cálculos de custo, materiais necessários e execução de reparos.
  */
-object ItemRepairService {
-
+class ItemRepairService() {
+    private val REPAIR_COST_MULTIPLIER: Double = 3.0
     /**
      * Multiplicador usado no cálculo do custo de reparo.
      *
@@ -26,7 +24,6 @@ object ItemRepairService {
      * - Item com 50% de dano → 2 materiais
      * - Item com 100% de dano → 3 materiais
      */
-    private const val REPAIR_COST_MULTIPLIER = 3.0
 
     /**
      * Calcula o custo de reparo baseado no dano atual do item.

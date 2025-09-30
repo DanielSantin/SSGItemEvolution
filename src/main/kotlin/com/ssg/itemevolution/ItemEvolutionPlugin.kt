@@ -14,6 +14,9 @@ import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.listeners.ItemEvolutionListener
 import com.ssg.itemevolution.listeners.MerchantInteractionListener
 import com.ssg.itemevolution.services.EnchantmentService
+import com.ssg.itemevolution.services.ItemDataService
+import com.ssg.itemevolution.services.ItemEvolutionService
+import com.ssg.itemevolution.ui.ItemDescriptionFormatter
 import com.ssg.itemevolution.utils.ItemUtils
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -28,6 +31,9 @@ class ItemEvolutionPlugin : JavaPlugin() {
 
         // 2. Registrar todas as suas classes de serviço como Singletons
         container.registerSingleton(ConfigManager::class)
+        container.registerSingleton(ItemDataService::class)
+        container.registerSingleton(ItemEvolutionService::class)
+        container.registerSingleton(ItemDescriptionFormatter::class)
         container.registerSingleton(ItemUtils::class)
         container.registerSingleton(EventManager::class)
         container.registerSingleton(DesabarEnchantment::class)

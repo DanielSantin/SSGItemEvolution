@@ -43,7 +43,7 @@ class ItemDescriptionFormatter(
     fun getShortDescription(item: ItemStack): List<Component> {
         val description = mutableListOf<Component>()
 
-        val level = itemDataService.getLevel(item)
+        val level = evolutionService.calculateLevelFromItem(item)
         val points = itemDataService.getPoints(item)
 
         description.add(Component.text("${COLOR_AQUA}Nível: $level"))
@@ -73,9 +73,9 @@ class ItemDescriptionFormatter(
      */
     private fun addEvolutionStats(item: ItemStack, description: MutableList<Component>) {
         val uses = itemDataService.getUses(item)
-        val level = itemDataService.getLevel(item)
         val points = itemDataService.getPoints(item)
         val progress = evolutionService.getLevelProgress(item)
+        val level = evolutionService.calculateLevelFromItem(item)
 
         // Calcular progresso para próximo nível
         val currentCounter = itemDataService.getCounter(item)
@@ -86,7 +86,6 @@ class ItemDescriptionFormatter(
         val nextLvl = nextLevelCounter - currentLevelCounter
 
         description.add(Component.text("${COLOR_GRAY}Usos: ${COLOR_GREEN}$uses"))
-        description.add(Component.text("${COLOR_GRAY}Nível: ${COLOR_AQUA}$level"))
         description.add(Component.text("${COLOR_GRAY}Pontos: ${COLOR_GOLD}$points"))
         description.add(Component.text("${COLOR_GRAY}Progresso: ${COLOR_GREEN}$toNext${COLOR_GRAY}/${COLOR_GREEN}$nextLvl ${COLOR_GRAY}(${formatPercentage(progress)})"))
         description.add(Component.text(SEPARATOR))

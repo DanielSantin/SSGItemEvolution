@@ -10,16 +10,15 @@ import org.bukkit.inventory.ItemStack
  * (ex: espada de ferro → espada de diamante) e precisa manter suas
  * propriedades personalizadas.
  */
-object ItemMetaTransferService {
+class ItemMetaTransferService() {
     fun transferMetadata(
         source: ItemStack,
         target: ItemStack,
-        plugin: ItemEvolutionPlugin
+        dataService: ItemDataService
     ) {
         val sourceMeta = source.itemMeta ?: return
         val targetMeta = target.itemMeta ?: return
 
-        val dataService = ItemDataService(plugin)
         dataService.copyDataContainer(
             sourceMeta.persistentDataContainer,
             targetMeta.persistentDataContainer

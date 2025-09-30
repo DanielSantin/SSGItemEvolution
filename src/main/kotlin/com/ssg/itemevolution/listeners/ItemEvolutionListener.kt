@@ -5,7 +5,6 @@ import com.ssg.itemevolution.handlers.EnchantmentEventResult
 import com.ssg.itemevolution.handlers.EnchantmentEventType
 import com.ssg.itemevolution.handlers.EventBuilder
 import com.ssg.itemevolution.handlers.EventManager
-import com.ssg.itemevolution.handlers.EvolutionEventType
 import com.ssg.itemevolution.handlers.ItemUsageType
 import com.ssg.itemevolution.handlers.MerchantHandler
 import com.ssg.itemevolution.services.EnchantmentService
@@ -150,19 +149,7 @@ class ItemEvolutionListener(
     private fun processItemEvolution(player: Player, tool: ItemStack, usageType: ItemUsageType) {
         if (!soulToolService.hasSoul(tool)) return
 
-        val oldLevel = itemUtils.getItemLevel(tool)
         val upgradedTool = itemUtils.upgradeItem(tool)
-        val newLevel = itemUtils.getItemLevel(upgradedTool)
-
-        // Disparar evento de evolução se houve mudança de nível
-        if (newLevel > oldLevel) {
-            val evolutionEvent = EventBuilder.evolution(oldLevel, newLevel, EvolutionEventType.LEVEL_UP)
-                .player(player)
-                .item(upgradedTool)
-                .build()
-
-            eventManager.fireEvolutionEvent(evolutionEvent)
-        }
 
         // Disparar evento de uso do item
         val usageEvent = EventBuilder.itemUsage(usageType)

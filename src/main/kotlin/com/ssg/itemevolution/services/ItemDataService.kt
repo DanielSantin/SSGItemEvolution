@@ -10,8 +10,9 @@ import org.bukkit.persistence.PersistentDataType
  * Serviço responsável por acessar e modificar dados persistentes dos itens.
  * Centraliza toda a interação com PersistentDataContainer.
  */
-class ItemDataService(private val plugin: ItemEvolutionPlugin) {
-
+class ItemDataService(
+    private val plugin: ItemEvolutionPlugin
+) {
     // ===== SOUL TOOL =====
 
     fun isSoulTool(item: ItemStack): Boolean {
@@ -33,26 +34,8 @@ class ItemDataService(private val plugin: ItemEvolutionPlugin) {
     }
 
     // ===== LEVEL =====
-
-    fun getLevel(item: ItemStack): Int {
-        val meta = item.itemMeta ?: return 1
-        return meta.persistentDataContainer.get(
-            EvolutionKey.LEVEL.key(plugin),
-            PersistentDataType.INTEGER
-        ) ?: 1
-    }
-
-    fun setLevel(item: ItemStack, level: Int) {
-        require(level >= 1) { "Level deve ser no mínimo 1" }
-
-        val meta = item.itemMeta ?: return
-        meta.persistentDataContainer.set(
-            EvolutionKey.LEVEL.key(plugin),
-            PersistentDataType.INTEGER,
-            level
-        )
-        item.itemMeta = meta
-    }
+    // REMOVIDO: A dependência circular foi quebrada
+    // Agora ItemEvolutionService chama setCounter diretamente
 
     // ===== COUNTER =====
 
@@ -75,6 +58,9 @@ class ItemDataService(private val plugin: ItemEvolutionPlugin) {
         )
         item.itemMeta = meta
     }
+
+    // REMOVIDO: setCounterBasedOnLevel (causava dependência circular)
+    // Essa lógica foi movida para ItemEvolutionService
 
     // ===== USES =====
 

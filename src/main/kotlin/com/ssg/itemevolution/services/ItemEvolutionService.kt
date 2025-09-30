@@ -1,6 +1,5 @@
 package com.ssg.itemevolution.services
 
-import com.ssg.itemevolution.ItemEvolutionPlugin
 import com.ssg.itemevolution.utils.ConfigManager
 import com.ssg.itemevolution.keys.ToolCategory
 import com.ssg.itemevolution.keys.ToolType
@@ -15,9 +14,10 @@ import kotlin.math.pow
  * Centraliza todos os cálculos relacionados a níveis, pontos e progressão.
  */
 class ItemEvolutionService(
-    private val plugin: ItemEvolutionPlugin,
     private val configManager: ConfigManager,
-    private val itemDataService: ItemDataService
+    private val itemDataService: ItemDataService,
+    private val itemMetaTransferService: ItemMetaTransferService,
+    private val materialUpgradeService: MaterialUpgradeService
 ) {
     companion object {
         private const val MIN_LEVEL = 1
@@ -60,17 +60,18 @@ class ItemEvolutionService(
 
         return item
     }
+
     /**
      * Melhora o item para o próximo material (ex: ferro -> diamante)
      */
     fun improveItem(item: ItemStack): ItemStack {
-        val nextMaterial = MaterialUpgradeService.getNextMaterial(item.type) ?: return item
+        val nextMaterial = materialUpgradeService.getNextMaterial(item.type) ?: return item
 
         // Criar novo item com material melhorado
         val newItem = ItemStack(nextMaterial, item.amount)
 
         // Transferir metadados
-        ItemMetaTransferService.transferMetadata(item, newItem, plugin)
+        itemMetaTransferService.transferMetadata(item, newItem, itemDataService)
 
         // Resetar contador (começa evolução do zero)
         itemDataService.setCounter(newItem, 1)
@@ -81,6 +82,31 @@ class ItemEvolutionService(
         }
 
         return newItem
+    }
+
+    /**
+     * Define o nível do item (ajustando o counter correspondente)
+     */
+    fun setLevel(item: ItemStack, level: Int) {
+        require(level >= 1) { "Level deve ser no mínimo 1" }
+        val newCounter = calculateCounterForLevel(level, item) + 1
+        itemDataService.setCounter(item, newCounter)
+    }
+
+    /**
+     * Define o counter baseado em um nível e adiciona ao counter atual
+     */
+    fun setCounterBasedOnLevel(item: ItemStack, counter: Int) {
+        require(counter >= 1) { "Counter deve ser no mínimo 1" }
+        val level = calculateLevelFromItem(item)
+        val initialCounter = calculateCounterForLevel(level, item)
+        val newCounter = initialCounter + counter
+        itemDataService.setCounter(item, newCounter)
+    }
+
+    fun calculateLevelFromItem(item: ItemStack): Int {
+        val counter = itemDataService.getCounter(item)
+        return calculateLevelFromCounter(counter, item)
     }
 
     /**
