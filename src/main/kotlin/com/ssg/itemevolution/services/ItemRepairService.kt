@@ -2,6 +2,9 @@ package com.ssg.itemevolution.services
 
 import com.ssg.itemevolution.keys.ToolType
 import org.bukkit.Material
+import org.bukkit.Sound
+import org.bukkit.enchantments.Enchantment
+import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.Damageable
 import kotlin.math.ceil
@@ -146,4 +149,19 @@ object ItemRepairService {
         val remaining = maxDurability - meta.damage
         return remaining.toDouble() / maxDurability.toDouble()
     }
+
+    fun applyDurabilityDamage(tool: ItemStack) {
+        val meta = tool.itemMeta
+        if (meta.isUnbreakable || tool.type.maxDurability <= 0) return
+        val damageable = meta as? Damageable ?: return
+
+        val unbreakingLevel = tool.getEnchantmentLevel(Enchantment.UNBREAKING)
+        val chanceToLoseDurability = 100.0 / (unbreakingLevel + 1)
+        val random = kotlin.random.Random.nextDouble(0.0, 100.0)
+
+        if (random >= chanceToLoseDurability) return
+        damageable.damage += 1
+        tool.itemMeta = damageable
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.ssg.itemevolution.enchantments.mining
 
 import com.ssg.itemevolution.ItemEvolutionPlugin
+import com.ssg.itemevolution.services.ItemRepairService.applyDurabilityDamage
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -85,6 +86,7 @@ class VeinMiningEnchantment(
                     originalBlockWasBroken = true
                 }
 
+                applyDurabilityDamage(tool)
                 block.breakNaturally(tool)
 
                 // Efeito visual baseado no tipo de material

@@ -1,8 +1,10 @@
 package com.ssg.itemevolution.handlers
 
+import com.ssg.itemevolution.enchantments.mining.AreaMiningEnchantment
 import com.ssg.itemevolution.enchantments.mining.DesabarEnchantment
 import com.ssg.itemevolution.enchantments.mining.VeinMiningEnchantment
 import com.ssg.itemevolution.enchantments.utility.EternaEnchantment
+import team.unnamed.creative.model.ElementFace.face
 
 /**
  * Agrupa os handlers de encantamentos para facilitar o registro.
@@ -11,9 +13,9 @@ import com.ssg.itemevolution.enchantments.utility.EternaEnchantment
 class EnchantmentEventHandlers(
     private val desabarEnchantment: DesabarEnchantment,
     private val veinMiningEnchantment: VeinMiningEnchantment,
-    private val eternaEnchantment: EternaEnchantment
+    private val eternaEnchantment: EternaEnchantment,
+    private val areaMiningEnchantment: AreaMiningEnchantment
 ) {
-
     val desabarHandler = object : EnchantmentEventHandler {
         override fun handle(event: EnchantmentEvent): EnchantmentEventResult {
             if (event.type != EnchantmentEventType.BLOCK_BREAK) return EnchantmentEventResult.IGNORED
@@ -47,6 +49,21 @@ class EnchantmentEventHandlers(
             }
 
             return EnchantmentEventResult.IGNORED
+        }
+    }
+
+    val areaMiningHandler = object : EnchantmentEventHandler {
+        override fun handle(event: EnchantmentEvent): EnchantmentEventResult {
+            if (event.type != EnchantmentEventType.BLOCK_BREAK) return EnchantmentEventResult.IGNORED
+
+            val player = event.player
+            val block = event.context["block"] as? org.bukkit.block.Block ?: return EnchantmentEventResult.IGNORED
+            val face = event.context["blockFace"] as? org.bukkit.block.BlockFace ?: return EnchantmentEventResult.IGNORED
+
+            // Executa sempre que o encantamento estiver ativo (sem precisar agachar, diferente do vein/desabar)
+            areaMiningEnchantment.executeAreaMining(player, block, event.item, event.level, face)
+
+            return EnchantmentEventResult.HANDLED
         }
     }
 
