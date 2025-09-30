@@ -1,7 +1,6 @@
 package com.ssg.itemevolution.listeners
 
-import com.ssg.itemevolution.ItemEvolutionPlugin
-import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.isItemBroken
+import com.ssg.itemevolution.enchantments.mining.AreaMiningEnchantment
 import com.ssg.itemevolution.handlers.EnchantmentEventResult
 import com.ssg.itemevolution.handlers.EnchantmentEventType
 import com.ssg.itemevolution.handlers.EventBuilder
@@ -9,6 +8,7 @@ import com.ssg.itemevolution.handlers.EventManager
 import com.ssg.itemevolution.handlers.ItemUsageType
 import com.ssg.itemevolution.handlers.MerchantHandler
 import com.ssg.itemevolution.services.EnchantmentService
+import com.ssg.itemevolution.services.ScoreboardService
 import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.ui.SoulToolDialog
 import com.ssg.itemevolution.utils.ItemUtils
@@ -25,19 +25,21 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.inventory.ItemStack
 
 /**
  * Listener principal refatorado para usar o sistema de eventos centralizado
  */
 class ItemEvolutionListener(
-    private val plugin: ItemEvolutionPlugin,
     private val soulToolDialog: SoulToolDialog,
     private val eventManager: EventManager,
     private val itemUtils: ItemUtils,
     private val enchantmentService: EnchantmentService,
     private val merchantHandler: MerchantHandler,
-    private val soulToolService: SoulToolService
+    private val soulToolService: SoulToolService,
+    private val areaMiningEnchantment: AreaMiningEnchantment,
+    private val scoreboardService: ScoreboardService
 ) : Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -102,6 +104,23 @@ class ItemEvolutionListener(
     }
 
     @EventHandler
+    fun onItemChange(event: PlayerItemHeldEvent) {
+        val player = event.player
+        val newItem = player.inventory.getItem(event.newSlot)
+        val oldItem = player.inventory.getItem(event.previousSlot)
+
+        areaMiningEnchantment.removeAreaMiningModifier(player, oldItem)
+        areaMiningEnchantment.applyAreaMiningModifier(player, newItem)
+
+        if (newItem != null && soulToolService.hasSoul(newItem)) {
+            scoreboardService.showFor(player, newItem)
+        } else {
+            scoreboardService.hideFor(player)
+        }
+    }
+
+
+    @EventHandler
     fun onInventoryOpen(event: InventoryOpenEvent) {
         val player = event.player as? Player ?: return
         merchantHandler.restoreToolItem(player)
@@ -159,6 +178,7 @@ class ItemEvolutionListener(
             .build()
 
         eventManager.fireItemUsageEvent(usageEvent)
+        scoreboardService.updateLines(player, upgradedTool)
     }
 
     private fun processEnchantments(
