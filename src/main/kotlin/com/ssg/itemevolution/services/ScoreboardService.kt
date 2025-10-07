@@ -23,13 +23,14 @@ class ScoreboardService(
         val sbManager = TabAPI.getInstance().scoreboardManager ?: return
 
         // Usa o formatter para gerar as linhas já prontas
+        val title = descriptionFormatter.getScoreboardTitle()
         val lines = descriptionFormatter.getScoreboardLines(item)
+
 
         // Cria (ou sobrescreve) o scoreboard com os valores
         val scoreboard = sbManager.createScoreboard(
             scoreboardId,
-
-            "<glyph:frame>",
+            title,
             lines
         )
 

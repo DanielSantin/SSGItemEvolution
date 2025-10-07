@@ -24,10 +24,11 @@ class ConfigManager(private val plugin: ItemEvolutionPlugin) : InitializableServ
         loadCustomConfig("messages.yml")
         loadCustomConfig("enchantments.yml")
         loadCustomConfig("merchant.yml")
+        loadCustomConfig("scoreboard.yml")
     }
 
     override fun dispose() {
-        saveCustomConfig("evolution.yml")
+        //saveCustomConfig("evolution.yml")
         plugin.logger.info("[SSG] ConfigManager finalizado.")
     }
 
@@ -45,11 +46,11 @@ class ConfigManager(private val plugin: ItemEvolutionPlugin) : InitializableServ
         return config
     }
 
-    private fun saveCustomConfig(fileName: String) {
-        val file = File(plugin.dataFolder, fileName)
-        val config = customConfigs[fileName] ?: return
-        config.save(file)
-    }
+//    private fun saveCustomConfig(fileName: String) {
+//        val file = File(plugin.dataFolder, fileName)
+//        val config = customConfigs[fileName] ?: return
+//        config.save(file)
+//    }
 
     fun getEvolutionSettings(): EvolutionSettings {
         val section = evolutionConfig.getConfigurationSection("evolution")!!
@@ -74,6 +75,7 @@ class ConfigManager(private val plugin: ItemEvolutionPlugin) : InitializableServ
         loadCustomConfig("messages.yml")
         loadCustomConfig("enchantments.yml")
         loadCustomConfig("merchant.yml")
+        loadCustomConfig("scoreboard.yml")
     }
 }
 

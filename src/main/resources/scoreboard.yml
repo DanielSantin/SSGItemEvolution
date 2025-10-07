@@ -1,0 +1,12 @@
+scoreboard:
+  enabled: true
+  title: "&bSoul Tool"
+  lines:
+    - "%animation:MyAnimation1%"
+    - "&6Info:"
+    - "&7Usos: &a{uses}"
+    - "&bNível: &a{level}"
+    - "&6Pontos: &a{points}"
+    - "&7NextLevel: &a{toNext}/&a{nextLvl}"
+    - ""
+    - ""

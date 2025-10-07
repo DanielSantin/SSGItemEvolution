@@ -2,6 +2,7 @@ package com.ssg.itemevolution.ui
 
 import com.ssg.itemevolution.services.ItemDataService
 import com.ssg.itemevolution.services.ItemEvolutionService
+import com.ssg.itemevolution.utils.ConfigManager
 import net.kyori.adventure.text.Component
 import org.bukkit.inventory.ItemStack
 
@@ -16,7 +17,8 @@ data class EvolutionStats(
 
 class ItemDescriptionFormatter(
     private val itemDataService: ItemDataService,
-    private val evolutionService: ItemEvolutionService
+    private val evolutionService: ItemEvolutionService,
+    private val configManager: ConfigManager
 ) {
 
     companion object {
@@ -69,22 +71,39 @@ class ItemDescriptionFormatter(
         )
     }
 
+    fun getScoreboardTitle(): String {
+        val config = configManager.getCustomConfig("scoreboard.yml") ?: return ""
+        val title = config.getString("scoreboard.title")
+        return title ?: ""
+    }
+
     /**
      * Gera linhas para Scoreboard (strings coloridas)
      */
     fun getScoreboardLines(item: ItemStack): List<String> {
         val stats = extractStats(item)
-        return listOf(
-            "           ${COLOR_AQUA}Soul Tool",
-            "    %animation:MyAnimation1%", // você pode trocar/omitir se quiser
-            "   &6Info:",
-            "    ${COLOR_GRAY}Usos: ${COLOR_GREEN}${stats.uses}",
-            "    ${COLOR_AQUA}Nível: ${COLOR_GREEN}${stats.level}",
-            "    ${COLOR_GOLD}Pontos: ${COLOR_GREEN}${stats.points}",
-            "    ${COLOR_GRAY}NextLevel: ${COLOR_GREEN}${stats.toNext}${COLOR_GRAY}/${COLOR_GREEN}${stats.nextLvl})",
-            "",
-            ""
-        )
+        val config = configManager.getCustomConfig("scoreboard.yml") ?: return emptyList()
+
+        val sbEnabled = config.getBoolean("scoreboard.enabled", true)
+        if (!sbEnabled) return emptyList()
+
+        val lines = mutableListOf<String>()
+
+        // Lê apenas as linhas configuradas
+        config.getStringList("scoreboard.lines").forEach { line ->
+            lines.add(applyPlaceholders(line, stats))
+        }
+
+        return lines
+    }
+
+    private fun applyPlaceholders(text: String, stats: EvolutionStats): String {
+        return text
+            .replace("{level}", stats.level.toString())
+            .replace("{points}", stats.points.toString())
+            .replace("{uses}", stats.uses.toString())
+            .replace("{toNext}", stats.toNext.toString())
+            .replace("{nextLvl}", stats.nextLvl.toString())
     }
 
 

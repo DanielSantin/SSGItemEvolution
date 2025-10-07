@@ -1,17 +1,16 @@
 package com.ssg.itemevolution.listeners
 
+import com.nexomc.nexo.api.NexoFurniture
+import com.nexomc.nexo.api.events.furniture.NexoFurnitureInteractEvent
+import com.nexomc.nexo.mechanics.furniture.FurnitureMechanic
 import com.ssg.itemevolution.enchantments.mining.AreaMiningEnchantment
-import com.ssg.itemevolution.handlers.EnchantmentEventResult
-import com.ssg.itemevolution.handlers.EnchantmentEventType
-import com.ssg.itemevolution.handlers.EventBuilder
-import com.ssg.itemevolution.handlers.EventManager
-import com.ssg.itemevolution.handlers.ItemUsageType
-import com.ssg.itemevolution.handlers.MerchantHandler
+import com.ssg.itemevolution.handlers.*
 import com.ssg.itemevolution.services.EnchantmentService
 import com.ssg.itemevolution.services.ScoreboardService
 import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.ui.SoulToolDialog
 import com.ssg.itemevolution.utils.ItemUtils
+import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.entity.Snowman
@@ -19,7 +18,6 @@ import org.bukkit.event.Event
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
-import org.bukkit.event.block.Action
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
@@ -27,6 +25,7 @@ import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.inventory.ItemStack
+
 
 /**
  * Listener principal refatorado para usar o sistema de eventos centralizado
@@ -41,17 +40,18 @@ class ItemEvolutionListener(
     private val areaMiningEnchantment: AreaMiningEnchantment,
     private val scoreboardService: ScoreboardService
 ) : Listener {
+    private val hasNexo = Bukkit.getPluginManager().getPlugin("Nexo") != null
 
     @EventHandler(priority = EventPriority.HIGHEST)
     fun onPlayerInteract(event: PlayerInteractEvent) {
-        if (event.action != Action.RIGHT_CLICK_BLOCK) return
-        val clickedBlock = event.clickedBlock ?: return
+        if (!hasNexo) return
+        val clickedBlock = event.clickedBlock
         val player = event.player
         val tool = player.inventory.itemInMainHand
-
         if (isSmithingTable(clickedBlock)) {
-            cancelInteraction(event)
-
+            event.setUseItemInHand(Event.Result.DENY)
+            event.setUseInteractedBlock(Event.Result.DENY)
+            event.isCancelled = true
             if (soulToolService.hasSoul(tool)) {
                 merchantHandler.openMerchant(player, tool)
             } else {
@@ -59,6 +59,51 @@ class ItemEvolutionListener(
             }
         }
     }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    fun onNexoFurnitureInteract(event: NexoFurnitureInteractEvent) {
+        val mechanic: FurnitureMechanic = event.mechanic
+        val player = event.player
+        val tool = event.itemInHand
+
+        if (mechanic.itemID == "bancada_de_melhoria") {
+            if (soulToolService.hasSoul(tool)) {
+                merchantHandler.openMerchant(player, tool)
+            } else {
+                soulToolDialog.checkEligibilityAndShowDialog(player, tool)
+            }
+        }
+    }
+
+//    @EventHandler
+//    fun onArmorChange(event: com.destroystokyo.paper.event.player.PlayerArmorChangeEvent) {
+//        val player = event.player
+//        player.sendMessage("§e--- DEBUG PlayerArmorChangeEvent ---")
+//        player.sendMessage("§7Slot: §f${event.slot}")
+//        player.sendMessage("§7SlotType (deprecated): §f${event.slotType}")
+//        player.sendMessage("§7Old Item: §f${event.oldItem?.type ?: "null"} x${event.oldItem?.amount ?: 0}")
+//        player.sendMessage("§7New Item: §f${event.newItem?.type ?: "null"} x${event.newItem?.amount ?: 0}")
+//        player.sendMessage("§e--- END DEBUG ---")
+//    }
+
+//    @EventHandler
+//    fun onPlayerInteract(event: PlayerInteractEvent) {
+//        event.setUseItemInHand(Event.Result.DENY)
+//        event.isCancelled = true
+//        val player = event.player
+//        player.sendMessage("§e--- DEBUG PlayerInteractEvent ---")
+//        player.sendMessage("§7Action: §f${event.action}")
+//        player.sendMessage("§7Item: §f${event.item?.type ?: "null"} x${event.item?.amount ?: 0}")
+//        player.sendMessage("§7Hand: §f${event.hand}")
+//        player.sendMessage("§7Clicked Block: §f${event.clickedBlock?.type ?: "null"}")
+//        player.sendMessage("§7Block Face: §f${event.blockFace}")
+//        player.sendMessage("§7Use Item In Hand: §f${event.useItemInHand()}")
+//        player.sendMessage("§7Use Interacted Block: §f${event.useInteractedBlock()}")
+//        player.sendMessage("§7Cancelled: §f${event.isCancelled}")
+//        player.sendMessage("§e--- END DEBUG ---")
+//    }
+
+
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
@@ -128,42 +173,16 @@ class ItemEvolutionListener(
 
     // MÉTODOS AUXILIARES
 
-    private fun isSmithingTable(block: org.bukkit.block.Block): Boolean {
+    private fun isSmithingTable(block: org.bukkit.block.Block?): Boolean {
         // Verificar se é uma mesa de ferreiro vanilla
-        if (block.type == Material.SMITHING_TABLE) return true
-
-        // Verificar se é bancada do Nexo (se disponível)
-        try {
-            val hasNexo = org.bukkit.Bukkit.getPluginManager().getPlugin("Nexo") != null
-            if (hasNexo) {
-                val nexoFurniture = Class.forName("com.nexomc.nexo.api.NexoFurniture")
-                val isFurnitureMethod = nexoFurniture.getMethod("isFurniture", org.bukkit.Location::class.java)
-                val isFurniture = isFurnitureMethod.invoke(null, block.location) as Boolean
-
-                if (isFurniture) {
-                    val baseEntityMethod = nexoFurniture.getMethod("baseEntity", org.bukkit.Location::class.java)
-                    val furnitureMechanicMethod = nexoFurniture.getMethod("furnitureMechanic", Object::class.java)
-                    val baseEntity = baseEntityMethod.invoke(null, block.location)
-                    val mechanism = furnitureMechanicMethod.invoke(null, baseEntity)
-
-                    if (mechanism != null) {
-                        val itemIdField = mechanism.javaClass.getField("itemID")
-                        val itemId = itemIdField.get(mechanism) as String
-                        return itemId == "bancada_de_melhoria"
-                    }
-                }
-            }
-        } catch (_: Exception) {
-            //Nexo não encontrado
+        if (block == null) return false
+        if (hasNexo) {
+            return NexoFurniture.isFurniture(block.location) && NexoFurniture.furnitureMechanic(NexoFurniture.baseEntity(block.location))?.itemID == "bancada_de_melhoria"
+        } else {
+            if (block.type == Material.SMITHING_TABLE) return true
         }
 
         return false
-    }
-
-    private fun cancelInteraction(event: PlayerInteractEvent) {
-        event.isCancelled = true
-        event.setUseItemInHand(Event.Result.DENY)
-        event.setUseInteractedBlock(Event.Result.DENY)
     }
 
     private fun processItemEvolution(player: Player, tool: ItemStack, usageType: ItemUsageType) {
