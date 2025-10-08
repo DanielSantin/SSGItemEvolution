@@ -36,13 +36,11 @@ class VisualEnchantmentService(
     private fun loadVisualConfigurations() {
         val visualConfig = configManager.getCustomConfig("visual_enchantments.yml")
         if (visualConfig == null) {
-            plugin.logger.warning("⚠️ Arquivo visual_enchantments.yml não encontrado!")
             return
         }
 
         val enchantSection = visualConfig.getConfigurationSection("visual_enchantments")
         if (enchantSection == null) {
-            plugin.logger.warning("⚠️ Seção 'visual_enchantments' não encontrada!")
             return
         }
 
@@ -52,7 +50,6 @@ class VisualEnchantmentService(
         for (enchantKey in enchantSection.getKeys(false)) {
             val materialSection = enchantSection.getConfigurationSection(enchantKey)
             if (materialSection == null) {
-                plugin.logger.warning("⚠️ Encantamento '$enchantKey' não tem materiais configurados!")
                 continue
             }
 
@@ -65,9 +62,6 @@ class VisualEnchantmentService(
 
                 if (material != null && modelPath != null) {
                     materialMap[material] = modelPath
-                    plugin.logger.info("  ✓ $enchantKey -> $materialName = $modelPath")
-                } else {
-                    plugin.logger.warning("  ✗ Material inválido ou modelo nulo: $materialName")
                 }
             }
 
@@ -77,10 +71,6 @@ class VisualEnchantmentService(
         }
 
         visualEnchantments = loadedEnchantments
-
-        plugin.logger.info("✅ Visual Enchantments carregados!")
-        plugin.logger.info("   Total de encantamentos: ${visualEnchantments.size}")
-        plugin.logger.info("   Total de modelos: ${visualEnchantments.values.sumOf { it.size }}")
     }
 
     /**
@@ -96,14 +86,12 @@ class VisualEnchantmentService(
         // Busca o mapa de materiais para este encantamento
         val materialMap = visualEnchantments[enchantmentKey]
         if (materialMap == null) {
-            plugin.logger.warning("⚠️ Encantamento '$enchantmentKey' não possui modelos visuais configurados")
             return false
         }
 
         // Busca o modelo para o material específico
         val modelPath = materialMap[item.type]
         if (modelPath == null) {
-            plugin.logger.warning("⚠️ Material ${item.type} não possui modelo visual para '$enchantmentKey'")
             return false
         }
 
@@ -112,10 +100,8 @@ class VisualEnchantmentService(
         if (modelKey != null) {
             meta.itemModel = modelKey
             item.itemMeta = meta
-            plugin.logger.info("✓ Modelo visual aplicado: $modelPath para ${item.type}")
             return true
         } else {
-            plugin.logger.warning("✗ Chave de modelo inválida: $modelPath")
             return false
         }
     }

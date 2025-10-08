@@ -31,12 +31,6 @@ merchant:
         material: "netherite_ingot"
         quantity: 1
 
-  # Configurações visuais
-  gui:
-    upgrade-slot: 0
-    repair-slot: 1
-    enchant-start-slot: 2
-
   # Sons reproduzidos
   sounds:
     open: "ITEM_ARMOR_EQUIP_LEATHER"

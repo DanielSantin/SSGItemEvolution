@@ -176,25 +176,15 @@ class MerchantHandler(
             // Reduzir pontos apenas se teve sucesso
             if (enchantmentService.hasEnchantment(enchantedTool, enchantName)) {
                 reducePoints(enchantedTool, requiredPoints)
+                if (visualEnchantmentService.hasVisualModel(enchantName)) {
+                    visualEnchantmentService.applyVisualModel(enchantedTool, enchantName)
+                }
 
-                // 🎨 APLICAR MODELO VISUAL se o encantamento tiver um
-                val fullEnchantKey = if (enchantName.contains(":")) {
-                    enchantName
-                } else {
-                    "supera:$enchantName"
-                }
-                plugin.logger.info("Aplicando modelo visual para $fullEnchantKey")
-                val hasVisualModel = visualEnchantmentService.hasVisualModel(fullEnchantKey)
-                plugin.logger.info("Modelo visual $fullEnchantKey: $hasVisualModel")
-                if (hasVisualModel) {
-                    visualEnchantmentService.applyVisualModel(enchantedTool, fullEnchantKey)
-                }
+                val recipe = MerchantRecipe(enchantedTool, 999)
+                recipe.addIngredient(tool)
+                recipe.addIngredient(cost)
+                trades.add(recipe)
             }
-
-            val recipe = MerchantRecipe(enchantedTool, 999)
-            recipe.addIngredient(tool)
-            recipe.addIngredient(cost)
-            trades.add(recipe)
         }
     }
 

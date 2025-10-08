@@ -7,7 +7,6 @@
         - "3 oak_log"
         - "5 oak_log"
         - "8 oak_log"
-      compatible-tools: [axe]
       description:
         - "Quebra múltiplos blocos de madeira"
         - "quando agachado"
@@ -23,7 +22,6 @@
         - "16 redstone_block"
         - "32 redstone_block"
         - "64 redstone_block"
-      compatible-tools: [pickaxe, axe, shovel, hoe]
 
     unbreaking:
       display-name: "Inquebrável"
@@ -34,7 +32,6 @@
         - "1 iron_ingot"
         - "1 diamond"
         - "1 netherite_scrap"
-      compatible-tools: [pickaxe, axe, shovel, hoe, sword, bow, crossbow, fishing_rod, helmet, chestplate, leggings, boots]
 
     fortune:
       display-name: "Fortuna"
@@ -45,7 +42,6 @@
         - "16 lapis_block"
         - "64 lapis_block"
         - "4 rabbit_foot"
-      compatible-tools: [pickaxe, axe, hoe]
 
     silk_touch:
       display-name: "Toque Suave"
@@ -53,7 +49,6 @@
       point-costs: [10]
       item-costs:
         - "1 ghast_tear"
-      compatible-tools: [pickaxe, axe, shovel, hoe]
 
     mending:
       display-name: "Remendo"
@@ -61,7 +56,6 @@
       point-costs: [8]
       item-costs:
         - "1 nexo:mending_book"
-      compatible-tools: [pickaxe, axe, shovel, hoe, sword, bow, crossbow, fishing_rod, helmet, chestplate, leggings, boots]
 
     looting:
       display-name: "Pilhagem"
@@ -72,7 +66,6 @@
         - "16 lapis_block"
         - "64 lapis_block"
         - "4 rabbit_foot"
-      compatible-tools: [sword, axe]
 
     sharpness:
       display-name: "Afiação"
@@ -84,7 +77,6 @@
         - "6 flint"
         - "8 flint"
         - "10 flint"
-      compatible-tools: [sword, axe]
 
     fire_aspect:
       display-name: "Aspecto Flamejante"
@@ -93,7 +85,6 @@
       item-costs:
         - "1 blaze_powder"
         - "2 blaze_powder"
-      compatible-tools: [sword, axe]
 
     knockback:
       display-name: "Repulsão"
@@ -102,7 +93,6 @@
       item-costs:
         - "1 slime_ball"
         - "2 slime_ball"
-      compatible-tools: [sword, axe]
 
     smite:
       display-name: "Ruína dos Mortos-Vivos"
@@ -114,7 +104,6 @@
         - "4 bone"
         - "8 bone"
         - "16 bone"
-      compatible-tools: [sword, axe]
 
     bane_of_arthropods:
       display-name: "Aniquilação de Artrópodes"
@@ -126,7 +115,6 @@
         - "4 spider_eye"
         - "8 spider_eye"
         - "16 spider_eye"
-      compatible-tools: [sword, axe]
 
   tool-compatibility:
     sword: [looting, sharpness, fire_aspect, knockback, smite, bane_of_arthropods, unbreaking, mending]

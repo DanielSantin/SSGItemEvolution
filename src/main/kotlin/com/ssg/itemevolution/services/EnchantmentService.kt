@@ -48,13 +48,6 @@ class EnchantmentService() {
             }
         }
 
-        // 2. Se falhou, tenta com o namespace padrão → supera:...
-        val fallbackKey = NamespacedKey.fromString("supera:${enchantmentKey.lowercase()}")
-
-        if (fallbackKey != null) {
-            return RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT).get(fallbackKey)
-        }
-
         return null
     }
 }
