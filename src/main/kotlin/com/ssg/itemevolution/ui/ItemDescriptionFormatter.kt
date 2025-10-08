@@ -53,10 +53,7 @@ class ItemDescriptionFormatter(
      */
     fun getDescription(item: ItemStack): List<Component> {
         val description = mutableListOf<Component>()
-
-        addEnchantments(item, description)
         addEvolutionStats(item, description)
-
         return description
     }
 
@@ -71,31 +68,25 @@ class ItemDescriptionFormatter(
         )
     }
 
-    fun getScoreboardTitle(): String {
-        val config = configManager.getCustomConfig("scoreboard.yml") ?: return ""
-        val title = config.getString("scoreboard.title")
-        return title ?: ""
-    }
-
-    /**
-     * Gera linhas para Scoreboard (strings coloridas)
-     */
-    fun getScoreboardLines(item: ItemStack): List<String> {
+    fun getScoreboardContent(item: ItemStack): Pair<String, List<String>> {
         val stats = extractStats(item)
-        val config = configManager.getCustomConfig("scoreboard.yml") ?: return emptyList()
-
-        val sbEnabled = config.getBoolean("scoreboard.enabled", true)
-        if (!sbEnabled) return emptyList()
-
-        val lines = mutableListOf<String>()
-
-        // Lê apenas as linhas configuradas
-        config.getStringList("scoreboard.lines").forEach { line ->
-            lines.add(applyPlaceholders(line, stats))
-        }
-
-        return lines
+        val isMax = stats.level >= configManager.getEvolutionSettings().maxLevel
+        val title = getScoreboardTitle( isMax)
+        val lines = getScoreboardLines(stats, isMax)
+        return title to lines
     }
+
+    fun getScoreboardTitle(isMaxLvl: Boolean): String {
+        return configManager.getScoreboardTitle(isMaxLvl)
+    }
+
+    fun getScoreboardLines(stats: EvolutionStats, isMaxLvl: Boolean): List<String> {
+        return configManager.getScoreboardLines(isMaxLvl).map { line ->
+            applyPlaceholders(line, stats)
+        }
+    }
+
+
 
     private fun applyPlaceholders(text: String, stats: EvolutionStats): String {
         return text
@@ -107,18 +98,6 @@ class ItemDescriptionFormatter(
     }
 
 
-    private fun addEnchantments(item: ItemStack, description: MutableList<Component>) {
-        val enchantments = item.enchantments
-        if (enchantments.isEmpty()) return
-
-        for ((enchantment, level) in enchantments) {
-            val enchantName = formatEnchantmentName(enchantment.key.key)
-            val romanLevel = toRoman(level)
-            description.add(Component.text("$COLOR_GRAY$enchantName $romanLevel"))
-        }
-        description.add(Component.text(SEPARATOR))
-    }
-
     private fun addEvolutionStats(item: ItemStack, description: MutableList<Component>) {
         val stats = extractStats(item)
         description.add(Component.text("${COLOR_GRAY}Usos: ${COLOR_GREEN}${stats.uses}"))
@@ -127,30 +106,8 @@ class ItemDescriptionFormatter(
         description.add(Component.text(SEPARATOR))
     }
 
-    private fun formatEnchantmentName(key: String): String {
-        return key.split("_")
-            .joinToString(" ") { word -> word.lowercase().replaceFirstChar { it.uppercase() } }
-    }
-
     private fun formatPercentage(value: Double): String {
         return String.format("%.1f%%", value * 100)
-    }
-
-    private fun toRoman(number: Int): String {
-        if (number > 10) return number.toString()
-        return when (number) {
-            1 -> "I"
-            2 -> "II"
-            3 -> "III"
-            4 -> "IV"
-            5 -> "V"
-            6 -> "VI"
-            7 -> "VII"
-            8 -> "VIII"
-            9 -> "IX"
-            10 -> "X"
-            else -> number.toString()
-        }
     }
 
     fun getProgressBar(progress: Double, length: Int = 20): String {

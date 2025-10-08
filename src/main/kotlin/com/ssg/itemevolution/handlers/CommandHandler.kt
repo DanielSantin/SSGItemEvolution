@@ -40,7 +40,7 @@ class CommandHandler(
 
         when (args[0].lowercase()) {
             "reload" -> handleReload(sender)
-            "info" -> handleInfo(sender, args)
+            "info" -> handleInfo(sender)
             "addsoul" -> handleAddSoul(sender)
             "removesoul" -> handleRemoveSoul(sender)
             "setlevel" -> handleSetLevel(sender, args)
@@ -80,7 +80,7 @@ class CommandHandler(
                         completions.addAll(keys.filter { it.startsWith(args[1].lowercase()) })
                     }
                     "debug" -> {
-                        completions.addAll(listOf("item", "enchants", "config").filter {
+                        completions.addAll(listOf("item").filter {
                             it.startsWith(args[1].lowercase())
                         })
                     }
@@ -118,7 +118,7 @@ class CommandHandler(
         }
     }
 
-    private fun handleInfo(sender: CommandSender, args: Array<out String>) {
+    private fun handleInfo(sender: CommandSender) {
         if (sender !is Player) {
             sender.sendMessage("§cEste comando só pode ser usado por jogadores.")
             return
@@ -302,7 +302,6 @@ class CommandHandler(
 
         when (args[1].lowercase()) {
             "item" -> debugItem(sender)
-            "config" -> debugConfig(sender)
             else -> sender.sendMessage("§cTipo de debug inválido.")
         }
     }
@@ -323,16 +322,6 @@ class CommandHandler(
                 sender.sendMessage("  §8${key.namespace}:${key.key}")
             }
         }
-    }
-
-
-    private fun debugConfig(sender: CommandSender) {
-        sender.sendMessage("§6=== DEBUG CONFIGURAÇÃO ===")
-        val settings = configManager.getEvolutionSettings()
-        sender.sendMessage("§7Base Multiplier: ${settings.baseMultiplier}")
-        sender.sendMessage("§7Level Exponent: ${settings.levelExponent}")
-        sender.sendMessage("§7Armor Multiplier: ${settings.armorMultiplier}")
-        sender.sendMessage("§7Max Level: ${settings.maxLevel}")
     }
 
     private fun sendHelp(sender: CommandSender) {

@@ -29,11 +29,20 @@ enum class ToolType(val materials: List<Material>) {
             return entries.find { it.materials.contains(material) }
         }
 
+        /**
+         * Retorna uma lista distinta de TODOS os materiais suportados para evolução.
+         */
         fun getAllToolMaterials(): List<Material> {
-            val allMaterials = mutableListOf<Material>()
-            entries.forEach { allMaterials.addAll(it.materials) }
-            allMaterials.addAll(listOf(Material.BOW, Material.SHIELD, Material.CROSSBOW))
-            return allMaterials
+            val standardTools = entries.flatMap { it.materials }
+
+            val specialItems = listOf(
+                Material.BOW,
+                Material.SHIELD,
+                Material.CROSSBOW
+            )
+
+            // Combina os itens padrão definidos no enum e os itens especiais, removendo duplicatas.
+            return (standardTools + specialItems).distinct()
         }
     }
 }
@@ -72,6 +81,11 @@ enum class ToolCategory {
             }
         }
 
+        fun getName(material: Material): String {
+            val category = fromMaterial(material)
+            return if (category != UNKNOWN) category.name else ""
+        }
+
         fun isArmor(category: ToolCategory): Boolean {
             return category in listOf(HELMET, CHESTPLATE, LEGGINGS, BOOTS)
         }
@@ -85,4 +99,3 @@ enum class ToolCategory {
 //        }
     }
 }
-

@@ -3,11 +3,7 @@ package com.ssg.itemevolution.services
 import com.ssg.itemevolution.utils.ConfigManager
 import com.ssg.itemevolution.keys.ToolCategory
 import com.ssg.itemevolution.keys.ToolType
-import com.ssg.itemevolution.utils.EvolutionSettings
-import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
-import kotlin.math.floor
-import kotlin.math.pow
 
 /**
  * Serviço responsável pela lógica de evolução de itens.
@@ -19,10 +15,6 @@ class ItemEvolutionService(
     private val itemMetaTransferService: ItemMetaTransferService,
     private val materialUpgradeService: MaterialUpgradeService
 ) {
-    companion object {
-        private const val MIN_LEVEL = 1
-    }
-
     /**
      * Configura um item novo com dados de evolução iniciais
      */
@@ -114,14 +106,17 @@ class ItemEvolutionService(
      */
     fun calculateLevelFromCounter(counter: Int, item: ItemStack): Int {
         val settings = configManager.getEvolutionSettings()
-        val durability = item.type.maxDurability.toDouble()
-        val multiplier = getMultiplierForItem(item, settings)
+        val max_level = settings.maxLevel
+        val min_level = settings.minLevel
 
-        val level = floor(
-            ((counter / (durability * multiplier)).pow(settings.levelExponent)) + 1
-        ).toInt()
+        val counterList = configManager.getCounterListForMaterial(item.type)
+            ?: return min_level
 
-        return level.coerceIn(MIN_LEVEL, settings.maxLevel)
+        val index = counterList.indexOfLast { requiredCounter ->
+            counter >= requiredCounter
+        }
+
+        return (index + 1).coerceIn(min_level, max_level)
     }
 
     /**
@@ -129,14 +124,18 @@ class ItemEvolutionService(
      */
     fun calculateCounterForLevel(level: Int, item: ItemStack): Int {
         val settings = configManager.getEvolutionSettings()
-        val durability = item.type.maxDurability.toDouble()
-        val multiplier = getMultiplierForItem(item, settings)
+        val max_level = settings.maxLevel
+        val min_level = settings.minLevel
 
-        // Inverte a fórmula: counter = (level - 1)^(1/exponent) * durability * multiplier
-        val exponent = settings.levelExponent
-        return floor(
-            (level - 1).toDouble().pow(1.0 / exponent) * durability * multiplier
-        ).toInt()
+        val counterList = configManager.getCounterListForMaterial(item.type)
+            ?: return 999999999 // Fallback: Se não houver lista, assume 0 usos para qualquer nível.
+
+        // 1. Garante que o nível solicitado está dentro dos limites da configuração
+        val safeLevel = level.coerceIn(min_level, max_level)
+
+        // 3. Retorna o valor do counter naquele índice.
+        // Usamos getOrElse para ser seguro caso o índice esteja fora do limite (embora 'coerceIn' já ajude).
+        return counterList.getOrNull(safeLevel - 1) ?: counterList.lastOrNull() ?: 0
     }
 
     /**
@@ -163,54 +162,31 @@ class ItemEvolutionService(
      * Calcula quantos pontos o jogador ganha ao subir de nível
      */
     private fun calculatePointsGained(item: ItemStack, fromLevel: Int, toLevel: Int): Int {
-        if (toLevel <= MIN_LEVEL || toLevel <= fromLevel) return 0
+        // Constrói as chaves para buscar na configuração
+        val categoryName = getToolCategoryName(item).uppercase()
+        val materialName = item.type.name.uppercase()
 
-        val pointsPerLevel = getPointsPerLevel(item)
+        // Obtém a lista de pontos customizada
+        val pointsList = configManager.getLevelPointsList(categoryName, materialName)
+
+        if (pointsList.isEmpty()) return 0
+
         var totalPoints = 0
 
-        // Somar pontos para cada nível entre fromLevel e toLevel
+        // Itera pelos NÍVEIS que foram alcançados
         for (level in (fromLevel + 1)..toLevel) {
-            totalPoints += pointsPerLevel * (level - 1)
-        }
+            // O índice na lista de pontos é sempre Nível - 2
+            val listIndex = level - 2
 
-        return totalPoints
-    }
-
-    /**
-     * Obtém quantos pontos por nível o item dá, baseado no tipo
-     */
-    private fun getPointsPerLevel(item: ItemStack): Int {
-        val evolutionConfig = configManager.getCustomConfig("evolution.yml") ?: return 2
-        val pointsSection = evolutionConfig.getConfigurationSection("evolution.points") ?: return 2
-
-        val toolType = ToolType.fromMaterial(item.type)
-        val points = when (toolType) {
-            ToolType.WOOD -> pointsSection.getInt("wood", 2)
-            ToolType.STONE -> pointsSection.getInt("stone", 3)
-            ToolType.IRON -> pointsSection.getInt("iron", 4)
-            ToolType.DIAMOND -> pointsSection.getInt("diamond", 5)
-            ToolType.NETHERITE -> pointsSection.getInt("netherite", 6)
-            ToolType.GOLD -> pointsSection.getInt("gold", 6)
-            ToolType.LEATHER -> pointsSection.getInt("leather", 2)
-            ToolType.CHAINMAIL -> pointsSection.getInt("chainmail", 3)
-            null -> when (item.type) {
-                Material.BOW -> pointsSection.getInt("bow", 2)
-                Material.SHIELD -> pointsSection.getInt("shield", 2)
-                Material.CROSSBOW -> pointsSection.getInt("crossbow", 2)
-                else -> 0
+            if (listIndex >= 0 && listIndex < pointsList.size) {
+                totalPoints += pointsList[listIndex]
+            } else if (listIndex >= pointsList.size) {
+                // Parar de ganhar pontos se o nível ultrapassar a configuração
+                break
             }
         }
 
-        return points
-    }
-
-    /**
-     * Obtém o multiplicador correto (base ou armor) para o item
-     */
-    private fun getMultiplierForItem(item: ItemStack, settings: EvolutionSettings): Double {
-        val category = ToolCategory.fromMaterial(item.type)
-        val isArmor = ToolCategory.isArmor(category)
-        return if (isArmor) settings.armorMultiplier else settings.baseMultiplier
+        return totalPoints
     }
 
     /**

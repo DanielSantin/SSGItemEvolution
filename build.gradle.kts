@@ -17,6 +17,7 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly("com.nexomc:nexo:1.10.0") //Nexo 1.X -> 1.X.0
     compileOnly("com.github.NEZNAMY", "TAB-API", "5.2.5")
+    implementation("net.objecthunter:exp4j:0.4.8")
     implementation(kotlin("stdlib"))
     implementation("org.apache.commons:commons-lang3:3.18.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect")

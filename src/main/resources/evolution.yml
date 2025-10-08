@@ -1,29 +1,121 @@
 evolution:
-  # Multiplicador base para cálculo de evolução
-  base-multiplier: 1.0
+  use-progression-formula:
+    # =========================
+    # Formula Priorities
+    # =========================
+    # 1. DEFAULT (lowest priority, global fallback)
+    #    Used when no category or item-specific formula is found.
+    DEFAULT: "({L} - 1)^(4/3) * {DUR}"
 
-  # Expoente usado no cálculo de nível
-  level-exponent: 0.75
+    # 2. ARMOR (low priority)
+    #    Used when the item is an armor piece but has no more specific formula.
+    ARMOR: "({L} - 1)^(4/3) * {DUR} * 0.25"
 
-  # Multiplicador específico para armaduras
-  armor-multiplier: 0.25
+    # 3. CATEGORY DEFAULT (medium priority)
+    #    Each armor category (helmet, chestplate, leggings, boots)
+    #    can have its own default formula if no item-specific rule is found.
+    HELMET:
+      # DEFAULT (medium priority for helmets)
+      # Used if the item is a helmet but has no item-specific formula.
+      DEFAULT: "({L} - 1)^(4/3) * {DUR} * 0.25"
 
-  # Nível máximo que um item pode atingir
-  max-level: 100
+      # 4. ITEM-SPECIFIC FORMULA (highest priority)
+      #    Applied only if the exact item is found here.
+      DIAMOND_HELMET: "({L} - 1)^(4/3) * {DUR} * 0.25"
 
-  # Configurações de pontos por tipo de ferramenta
-  points:
-    wood: 2
-    stone: 3
-    iron: 4
-    diamond: 5
-    netherite: 6
-    gold: 6
-    leather: 2
-    chainmail: 3
-    bow: 2
-    shield: 2
-    crossbow: 2
+    CHESTPLATE:
+      DIAMOND_CHESTPLATE: "({L} - 1)^(4/3) * {DUR} * 0.25"
+
+    LEGGINGS:
+      DIAMOND_LEGGINGS: "({L} - 1)^(4/3) * {DUR} * 0.25"
+
+    BOOTS:
+      DIAMOND_BOOTS: "({L} - 1)^(4/3) * {DUR} * 0.25"
+
+  material-level-points:
+    SWORD:
+      WOODEN_SWORD:    [2, 4, 6, 8]
+      STONE_SWORD:     [3, 6, 9, 12]
+      IRON_SWORD:      [4, 8, 12, 16]
+      DIAMOND_SWORD:   [5, 10, 15, 20]
+      NETHERITE_SWORD: [6, 12, 18, 24]
+      GOLDEN_SWORD:    [6, 12, 18, 24]
+
+    PICKAXE:
+      WOODEN_PICKAXE:    [2, 4, 6, 8]
+      STONE_PICKAXE:     [3, 6, 9, 12]
+      IRON_PICKAXE:      [4, 8, 12, 16]
+      DIAMOND_PICKAXE:   [5, 10, 15, 20]
+      NETHERITE_PICKAXE: [6, 12, 18, 24]
+      GOLDEN_PICKAXE:    [6, 12, 18, 24]
+
+    AXE:
+      WOODEN_AXE:    [2, 4, 6, 8]
+      STONE_AXE:     [3, 6, 9, 12]
+      IRON_AXE:      [4, 8, 12, 16]
+      DIAMOND_AXE:   [5, 10, 15, 20]
+      NETHERITE_AXE: [6, 12, 18, 24]
+      GOLDEN_AXE:    [6, 12, 18, 24]
+
+    SHOVEL:
+      WOODEN_SHOVEL:    [2, 4, 6, 8]
+      STONE_SHOVEL:     [3, 6, 9, 12]
+      IRON_SHOVEL:      [4, 8, 12, 16]
+      DIAMOND_SHOVEL:   [5, 10, 15, 20]
+      NETHERITE_SHOVEL: [6, 12, 18, 24]
+      GOLDEN_SHOVEL:    [6, 12, 18, 24]
+
+    HOE:
+      WOODEN_HOE:    [2, 4, 6, 8]
+      STONE_HOE:     [3, 6, 9, 12]
+      IRON_HOE:      [4, 8, 12, 16]
+      DIAMOND_HOE:   [5, 10, 15, 20]
+      NETHERITE_HOE: [6, 12, 18, 24]
+      GOLDEN_HOE:    [6, 12, 18, 24]
+
+    HELMET:
+      LEATHER_HELMET:    [2, 4, 6, 8]
+      CHAINMAIL_HELMET:  [3, 6, 9, 12]
+      IRON_HELMET:       [4, 8, 12, 16]
+      DIAMOND_HELMET:    [5, 10, 15, 20]
+      NETHERITE_HELMET:  [6, 12, 18, 24]
+      GOLDEN_HELMET:     [6, 12, 18, 24]
+
+    CHESTPLATE:
+      LEATHER_CHESTPLATE:    [2, 4, 6, 8]
+      CHAINMAIL_CHESTPLATE:  [3, 6, 9, 12]
+      IRON_CHESTPLATE:       [4, 8, 12, 16]
+      DIAMOND_CHESTPLATE:    [5, 10, 15, 20]
+      NETHERITE_CHESTPLATE:  [6, 12, 18, 24]
+      GOLDEN_CHESTPLATE:     [6, 12, 18, 24]
+
+    LEGGINGS:
+      LEATHER_LEGGINGS:    [2, 4, 6, 8]
+      CHAINMAIL_LEGGINGS:  [3, 6, 9, 12]
+      IRON_LEGGINGS:       [4, 8, 12, 16]
+      DIAMOND_LEGGINGS:    [5, 10, 15, 20]
+      NETHERITE_LEGGINGS:  [6, 12, 18, 24]
+      GOLDEN_LEGGINGS:     [6, 12, 18, 24]
+
+    BOOTS:
+      LEATHER_BOOTS:    [2, 4, 6, 8]
+      CHAINMAIL_BOOTS:  [3, 6, 9, 12]
+      IRON_BOOTS:       [4, 8, 12, 16]
+      DIAMOND_BOOTS:    [5, 10, 15, 20]
+      NETHERITE_BOOTS:  [6, 12, 18, 24]
+      GOLDEN_BOOTS:     [6, 12, 18, 24]
+
+    BOW:
+      BOW:           [5, 10, 15, 20] # Usando P_base=5
+    SHIELD:
+      SHIELD:        [5, 10, 15, 20] # Usando P_base=5
+    CROSSBOW:
+      CROSSBOW:      [5, 10, 15, 20] # Usando P_base=5
+
+    # ------------------------------------
+    # FALLBACK (Se o item não for encontrado nas seções acima)
+    # ------------------------------------
+    DEFAULT: [1, 1, 1, 1]
 
 # Configurações de materiais especiais
 materials:
