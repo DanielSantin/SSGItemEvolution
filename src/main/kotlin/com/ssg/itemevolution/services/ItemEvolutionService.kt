@@ -1,9 +1,13 @@
 package com.ssg.itemevolution.services
 
+import com.ssg.itemevolution.core.InitializableService
+import com.ssg.itemevolution.core.ReloadableService
 import com.ssg.itemevolution.utils.ConfigManager
 import com.ssg.itemevolution.keys.ToolCategory
 import com.ssg.itemevolution.keys.ToolType
+import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
+import kotlin.math.floor
 
 /**
  * Serviço responsável pela lógica de evolução de itens.
@@ -14,7 +18,57 @@ class ItemEvolutionService(
     private val itemDataService: ItemDataService,
     private val itemMetaTransferService: ItemMetaTransferService,
     private val materialUpgradeService: MaterialUpgradeService
-) {
+)  : InitializableService, ReloadableService {
+
+    private val levelUseTable: MutableMap<Material, List<Int>> = mutableMapOf()
+
+    override fun initialize() { generateLevelUseTable() }
+    override fun onConfigReload() { generateLevelUseTable() }
+
+    /**
+     * Gera a tabela de contadores de uso necessários para cada nível.
+     */
+    fun generateLevelUseTable() {
+        levelUseTable.clear()
+        val settings = configManager.getEvolutionSettings()
+        val allValidMaterials = ToolType.getAllToolMaterials()
+
+        for (material in allValidMaterials) {
+            val durability = material.maxDurability.toDouble()
+            val categoryName = ToolCategory.getName(material)
+
+            // Obtém a fórmula customizada (o ConfigManager ainda é responsável por FORNECER a fórmula)
+            val formula = configManager.getProgressionFormula(categoryName, material)
+
+            val useList = mutableListOf<Int>()
+
+            for (level in settings.minLevel..settings.maxLevel) {
+
+                val counterCalculated = FormulaHelper.evaluateCounter(
+                    formula = formula,
+                    level = level,
+                    durability = durability
+                )
+
+                // O uso real é o valor avaliado, arredondado para o inteiro.
+                val counterForLevel = floor(counterCalculated).toInt()
+
+                useList.add(counterForLevel)
+            }
+
+            levelUseTable[material] = useList
+        }
+    }
+
+    /**
+     * Obtém a lista de contadores de uso para um material específico.
+     * (Antigo getCounterListForMaterial do ConfigManager)
+     */
+    fun getCounterListForMaterial(material: Material): List<Int>? {
+        return levelUseTable[material]
+    }
+
+
     /**
      * Configura um item novo com dados de evolução iniciais
      */
@@ -101,15 +155,12 @@ class ItemEvolutionService(
         return calculateLevelFromCounter(counter, item)
     }
 
-    /**
-     * Calcula o nível baseado no contador atual
-     */
     fun calculateLevelFromCounter(counter: Int, item: ItemStack): Int {
         val settings = configManager.getEvolutionSettings()
         val max_level = settings.maxLevel
         val min_level = settings.minLevel
 
-        val counterList = configManager.getCounterListForMaterial(item.type)
+        val counterList = getCounterListForMaterial(item.type)
             ?: return min_level
 
         val index = counterList.indexOfLast { requiredCounter ->
@@ -119,25 +170,18 @@ class ItemEvolutionService(
         return (index + 1).coerceIn(min_level, max_level)
     }
 
-    /**
-     * Calcula quantos contadores são necessários para atingir um nível específico
-     */
     fun calculateCounterForLevel(level: Int, item: ItemStack): Int {
         val settings = configManager.getEvolutionSettings()
         val max_level = settings.maxLevel
         val min_level = settings.minLevel
 
-        val counterList = configManager.getCounterListForMaterial(item.type)
-            ?: return 999999999 // Fallback: Se não houver lista, assume 0 usos para qualquer nível.
+        val counterList = getCounterListForMaterial(item.type)
+            ?: return 999999999
 
-        // 1. Garante que o nível solicitado está dentro dos limites da configuração
         val safeLevel = level.coerceIn(min_level, max_level)
 
-        // 3. Retorna o valor do counter naquele índice.
-        // Usamos getOrElse para ser seguro caso o índice esteja fora do limite (embora 'coerceIn' já ajude).
         return counterList.getOrNull(safeLevel - 1) ?: counterList.lastOrNull() ?: 0
     }
-
     /**
      * Calcula o progresso até o próximo nível (0.0 a 1.0)
      */

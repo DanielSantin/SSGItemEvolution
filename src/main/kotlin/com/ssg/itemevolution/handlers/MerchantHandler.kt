@@ -7,6 +7,7 @@ import com.ssg.itemevolution.utils.ConfigManager
 import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.isItemBroken
 import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.removeBrokenItemMark
 import com.ssg.itemevolution.services.EnchantmentService
+import com.ssg.itemevolution.services.VisualEnchantmentService
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
 import net.kyori.adventure.text.Component
@@ -28,7 +29,8 @@ class MerchantHandler(
     private val plugin: ItemEvolutionPlugin,
     private val itemUtils: ItemUtils,
     private val configManager: ConfigManager,
-    private val enchantmentService: EnchantmentService
+    private val enchantmentService: EnchantmentService,
+    private val visualEnchantmentService: VisualEnchantmentService
 ) {
     private val toolItemKey = NamespacedKey(plugin, "tool_item")
 
@@ -54,7 +56,7 @@ class MerchantHandler(
             return
         }
 
-        // 🔹 Carregar merchant.yml e pegar título
+        // Carregar merchant.yml e pegar título
         val merchantConfig = configManager.getCustomConfig("merchant.yml")
         val title = merchantConfig?.getString("merchant.title") ?: "Mercador"
 
@@ -78,7 +80,6 @@ class MerchantHandler(
                 repairedMeta.damage = 0
                 repairedTool.itemMeta = repairedMeta
 
-
                 val repairRecipe = MerchantRecipe(repairedTool, 999)
                 repairRecipe.addIngredient(tool)
                 repairRecipe.addIngredient(repairItems)
@@ -91,6 +92,10 @@ class MerchantHandler(
         val upgradeItemStack = itemUtils.getUpgradeItemstack(tool)
         if (upgradeItemStack != null) {
             val upgradedTool = itemUtils.improveItem(tool)
+
+            // 🔧 ATUALIZAR MODELO VISUAL ao fazer upgrade
+            visualEnchantmentService.updateVisualModelOnUpgrade(tool, upgradedTool)
+
             val upgradeRecipe = MerchantRecipe(upgradedTool, 999)
             upgradeRecipe.addIngredient(tool)
             upgradeRecipe.addIngredient(upgradeItemStack)
@@ -171,6 +176,19 @@ class MerchantHandler(
             // Reduzir pontos apenas se teve sucesso
             if (enchantmentService.hasEnchantment(enchantedTool, enchantName)) {
                 reducePoints(enchantedTool, requiredPoints)
+
+                // 🎨 APLICAR MODELO VISUAL se o encantamento tiver um
+                val fullEnchantKey = if (enchantName.contains(":")) {
+                    enchantName
+                } else {
+                    "supera:$enchantName"
+                }
+                plugin.logger.info("Aplicando modelo visual para $fullEnchantKey")
+                val hasVisualModel = visualEnchantmentService.hasVisualModel(fullEnchantKey)
+                plugin.logger.info("Modelo visual $fullEnchantKey: $hasVisualModel")
+                if (hasVisualModel) {
+                    visualEnchantmentService.applyVisualModel(enchantedTool, fullEnchantKey)
+                }
             }
 
             val recipe = MerchantRecipe(enchantedTool, 999)

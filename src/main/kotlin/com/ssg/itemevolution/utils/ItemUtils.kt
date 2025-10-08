@@ -1,8 +1,6 @@
 package com.ssg.itemevolution.utils
 
 import com.ssg.itemevolution.services.*
-import com.ssg.itemevolution.ui.ItemDescriptionFormatter
-import net.kyori.adventure.text.Component
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 
@@ -16,7 +14,6 @@ import org.bukkit.inventory.ItemStack
 class ItemUtils(
     private val itemDataService: ItemDataService,
     private val itemEvolutionService: ItemEvolutionService,
-    private val descriptionFormatter: ItemDescriptionFormatter,
     private val itemRepairService: ItemRepairService,
     private val materialUpgradeService: MaterialUpgradeService
 ) {
@@ -86,14 +83,6 @@ class ItemUtils(
     fun addItemPoints(item: ItemStack, points: Int) {
         itemDataService.addPoints(item, points)
     }
-
-    /**
-     * Define os pontos do item
-     */
-    fun setItemPoints(item: ItemStack, points: Int) {
-        itemDataService.setPoints(item, points)
-    }
-
     /**
      * Obtém o número de usos do item
      */
@@ -102,62 +91,10 @@ class ItemUtils(
     }
 
     /**
-     * Incrementa o contador de usos
-     */
-    fun incrementUses(item: ItemStack) {
-        itemDataService.incrementUses(item)
-    }
-
-    /**
-     * Define o número de usos do item
-     */
-    fun setItemUses(item: ItemStack, uses: Int) {
-        itemDataService.setUses(item, uses)
-    }
-
-    /**
      * Obtém o contador interno de evolução
      */
     fun getItemCounter(item: ItemStack): Int {
         return itemDataService.getCounter(item)
-    }
-
-    /**
-     * Define o contador interno de evolução
-     */
-    fun setItemCounter(item: ItemStack, counter: Int) {
-        itemDataService.setCounter(item, counter)
-    }
-
-    /**
-     * Calcula o progresso até o próximo nível (0.0 a 1.0)
-     */
-    fun getLevelProgress(item: ItemStack): Double {
-        return itemEvolutionService.getLevelProgress(item)
-    }
-
-    // ===== MÉTODOS DE UI/FORMATAÇÃO =====
-
-    /**
-     * Retorna a descrição completa do item para exibição
-     */
-    fun getDescription(item: ItemStack): List<Component> {
-        return descriptionFormatter.getDescription(item)
-    }
-
-    /**
-     * Retorna uma descrição resumida do item
-     */
-    fun getShortDescription(item: ItemStack): List<Component> {
-        return descriptionFormatter.getShortDescription(item)
-    }
-
-    /**
-     * Gera barra de progresso visual
-     */
-    fun getProgressBar(item: ItemStack, length: Int = 20): String {
-        val progress = itemEvolutionService.getLevelProgress(item)
-        return descriptionFormatter.getProgressBar(progress, length)
     }
 
     // ===== MÉTODOS DE REPARO =====
@@ -177,83 +114,11 @@ class ItemUtils(
     }
 
     /**
-     * Repara o item completamente
-     */
-    fun repairItem(item: ItemStack) {
-        itemRepairService.repairItem(item)
-    }
-
-    /**
-     * Repara o item parcialmente
-     */
-    fun repairItem(item: ItemStack, amount: Int) {
-        itemRepairService.repairItem(item, amount)
-    }
-
-    /**
-     * Verifica se o item precisa de reparo
-     */
-    fun needsRepair(item: ItemStack): Boolean {
-        return itemRepairService.needsRepair(item)
-    }
-
-    /**
-     * Obtém a porcentagem de durabilidade restante
-     */
-    fun getDurabilityPercentage(item: ItemStack): Double {
-        return itemRepairService.getDurabilityPercentage(item)
-    }
-
-    // ===== MÉTODOS DE UPGRADE DE MATERIAL =====
-
-    /**
-     * Obtém o material necessário para upgrade
-     */
-    fun getUpgradeMaterial(item: ItemStack): Material? {
-        return materialUpgradeService.getUpgradeMaterial(item)
-    }
-
-    /**
-     * Obtém a quantidade de material necessária para upgrade
-     */
-    fun getMaterialQuantity(item: ItemStack): Int {
-        return materialUpgradeService.getUpgradeMaterialQuantity(item)
-    }
-
-    /**
      * Retorna o ItemStack completo necessário para upgrade
      */
     fun getUpgradeItemstack(item: ItemStack): ItemStack? {
         return materialUpgradeService.getUpgradeItemStack(item)
     }
 
-    /**
-     * Verifica se o item pode ser melhorado
-     */
-    fun canBeUpgraded(item: ItemStack): Boolean {
-        return materialUpgradeService.canBeUpgraded(item)
-    }
 
-    // ===== MÉTODOS AUXILIARES =====
-
-    /**
-     * Verifica se o item possui dados de evolução
-     */
-    fun hasEvolutionData(item: ItemStack): Boolean {
-        return itemDataService.hasEvolutionData(item)
-    }
-
-    /**
-     * Remove todos os dados de evolução do item
-     */
-    fun clearEvolutionData(item: ItemStack) {
-        itemDataService.clearEvolutionData(item)
-    }
-
-    /**
-     * Copia dados de evolução de um item para outro
-     */
-    fun copyEvolutionData(source: ItemStack, target: ItemStack) {
-        itemDataService.copyEvolutionData(source, target)
-    }
 }

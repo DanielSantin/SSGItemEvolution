@@ -16,6 +16,7 @@ import com.ssg.itemevolution.listeners.MerchantInteractionListener
 import com.ssg.itemevolution.services.EnchantmentService
 import com.ssg.itemevolution.services.ItemDataService
 import com.ssg.itemevolution.services.ItemEvolutionService
+import com.ssg.itemevolution.services.VisualEnchantmentService
 import com.ssg.itemevolution.ui.ItemDescriptionFormatter
 import com.ssg.itemevolution.utils.ItemUtils
 import org.bukkit.plugin.java.JavaPlugin
@@ -41,23 +42,24 @@ class ItemEvolutionPlugin : JavaPlugin() {
         container.registerSingleton(EternaEnchantment::class)
         container.registerSingleton(EnchantmentService::class)
         container.registerSingleton(SoulToolService::class)
+
+        container.registerSingleton(VisualEnchantmentService::class)
         container.registerSingleton(MerchantHandler::class)
+
         container.registerSingleton(SoulToolDialog::class)
         container.registerSingleton(EnchantmentRegistrationHandler::class)
         container.registerSingleton(ItemEvolutionListener::class)
         container.registerSingleton(MerchantInteractionListener::class)
-        container.registerSingleton(CommandHandler::class) // ADICIONE ESTE!
+        container.registerSingleton(CommandHandler::class)
 
-        // 3. PRIMEIRO inicializa todos os serviços
         container.initializeServices()
 
-        // 4. DEPOIS obtém as instâncias (já inicializadas)
+        // ✅ AGORA SIM: recuperar as instâncias que foram registradas
         val commandHandler = container.get(CommandHandler::class)
         val enchantmentRegistrationHandler = container.get(EnchantmentRegistrationHandler::class)
         val itemEvolutionListener = container.get(ItemEvolutionListener::class)
         val merchantInteractionListener = container.get(MerchantInteractionListener::class)
 
-        // 5. Ativar os serviços
         this.getCommand("ssgitemevolution")?.setExecutor(commandHandler)
         this.getCommand("ssgitemevolution")?.tabCompleter = commandHandler
         enchantmentRegistrationHandler.registerEnchantmentEventHandlers()

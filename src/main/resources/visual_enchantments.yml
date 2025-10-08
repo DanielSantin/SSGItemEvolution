@@ -1,0 +1,78 @@
+# ========================================
+# CONFIGURAÇÃO DE ENCANTAMENTOS VISUAIS
+# ========================================
+# Define quais encantamentos alteram o modelo 3D do item
+#
+# Formato:
+# enchantment_key:
+#   MATERIAL: "namespace:model_path"
+#
+# Vantagens:
+# - Flexibilidade total para customizar cada modelo
+# - Suporte para diferentes namespaces (não só supera:)
+# - Fácil de adicionar modelos de outros resource packs
+# ========================================
+
+visual_enchantments:
+  # Mineração em Área - Transforma a ferramenta em martelo
+  "supera:area_mining":
+    NETHERITE_PICKAXE: "supera:netherite_hammer"
+    DIAMOND_PICKAXE: "supera:diamond_hammer"
+    IRON_PICKAXE: "supera:iron_hammer"
+    GOLDEN_PICKAXE: "supera:golden_hammer"
+    STONE_PICKAXE: "supera:stone_hammer"
+    WOODEN_PICKAXE: "supera:wooden_hammer"
+
+    #NETHERITE_AXE: "supera:netherite_hammer"
+    #DIAMOND_AXE: "supera:diamond_hammer"
+    #IRON_AXE: "supera:iron_hammer"
+    #GOLDEN_AXE: "supera:golden_hammer"
+    #STONE_AXE: "supera:stone_hammer"
+    #WOODEN_AXE: "supera:wooden_hammer"
+
+    #NETHERITE_SHOVEL: "supera:netherite_hammer"
+    #DIAMOND_SHOVEL: "supera:diamond_hammer"
+    #IRON_SHOVEL: "supera:iron_hammer"
+    #GOLDEN_SHOVEL: "supera:golden_hammer"
+    #STONE_SHOVEL: "supera:stone_hammer"
+    #WOODEN_SHOVEL: "supera:wooden_hammer"
+
+    #NETHERITE_HOE: "supera:netherite_hammer"
+    #DIAMOND_HOE: "supera:diamond_hammer"
+    #IRON_HOE: "supera:iron_hammer"
+    #GOLDEN_HOE: "supera:golden_hammer"
+    #STONE_HOE: "supera:stone_hammer"
+    #WOODEN_HOE: "supera:wooden_hammer"
+
+  # Exemplos de futuros encantamentos visuais:
+  # "supera:vein_miner":
+  #   DIAMOND_PICKAXE: "custom:diamond_drill"
+  #   IRON_PICKAXE: "custom:iron_drill"
+
+  # "supera:tree_chopper":
+  #   DIAMOND_AXE: "tools:diamond_chainsaw"
+  #   IRON_AXE: "tools:iron_chainsaw"
+
+# ========================================
+# NOTAS IMPORTANTES
+# ========================================
+# 1. Os modelos devem existir no resource pack do servidor
+# 2. Você pode usar qualquer namespace: supera:, minecraft:, custom:, etc
+# 3. Se um material não estiver listado, o encantamento não terá efeito visual
+# 4. Durante upgrades, o sistema busca automaticamente o modelo do novo material
+# 5. Modelos são preservados durante reparos
+# ========================================
+
+# ========================================
+# EXEMPLOS DE USO
+# ========================================
+# Usando modelos do Minecraft vanilla:
+#   DIAMOND_PICKAXE: "minecraft:diamond_pickaxe"
+#
+# Usando modelos de outro resource pack:
+#   IRON_PICKAXE: "mythic:legendary_pickaxe"
+#
+# Misturando namespaces:
+#   NETHERITE_PICKAXE: "supera:netherite_hammer"
+#   DIAMOND_PICKAXE: "custom:diamond_drill"
+# ========================================

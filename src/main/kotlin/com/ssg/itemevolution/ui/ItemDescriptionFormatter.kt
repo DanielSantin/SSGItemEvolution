@@ -1,9 +1,10 @@
 package com.ssg.itemevolution.ui
 
+import com.ssg.itemevolution.core.InitializableService
+import com.ssg.itemevolution.core.ReloadableService
 import com.ssg.itemevolution.services.ItemDataService
 import com.ssg.itemevolution.services.ItemEvolutionService
 import com.ssg.itemevolution.utils.ConfigManager
-import net.kyori.adventure.text.Component
 import org.bukkit.inventory.ItemStack
 
 data class EvolutionStats(
@@ -19,14 +20,26 @@ class ItemDescriptionFormatter(
     private val itemDataService: ItemDataService,
     private val evolutionService: ItemEvolutionService,
     private val configManager: ConfigManager
-) {
+) : InitializableService, ReloadableService {
 
-    companion object {
-        private const val COLOR_GRAY = "§7"
-        private const val COLOR_GOLD = "§6"
-        private const val COLOR_GREEN = "§a"
-        private const val COLOR_AQUA = "§b"
-        private const val SEPARATOR = "§7----------------------"
+    private lateinit var scoreboardDefaultTitle: String
+    private lateinit var scoreboardDefaultLines: List<String>
+    private lateinit var scoreboardMaxTitle: String
+    private lateinit var scoreboardMaxLines: List<String>
+
+    override fun initialize() { loadScoreboardConfig() }
+    override fun onConfigReload() { loadScoreboardConfig() }
+
+    fun loadScoreboardConfig() { // Mantenha público/internal para reloads
+        val config = configManager.getCustomConfig("scoreboard.yml") ?: return
+
+        val defaultSection = config.getConfigurationSection("scoreboard.default")
+        scoreboardDefaultTitle = defaultSection?.getString("title") ?: ""
+        scoreboardDefaultLines = defaultSection?.getStringList("lines") ?: emptyList()
+
+        val maxSection = config.getConfigurationSection("scoreboard.max-level")
+        scoreboardMaxTitle = maxSection?.getString("title") ?: ""
+        scoreboardMaxLines = maxSection?.getStringList("lines") ?: emptyList()
     }
 
     /**
@@ -48,26 +61,6 @@ class ItemDescriptionFormatter(
         return EvolutionStats(level, points, uses, progress, toNext, nextLvl)
     }
 
-    /**
-     * Lore completa (Adventure Component)
-     */
-    fun getDescription(item: ItemStack): List<Component> {
-        val description = mutableListOf<Component>()
-        addEvolutionStats(item, description)
-        return description
-    }
-
-    /**
-     * Lore curta
-     */
-    fun getShortDescription(item: ItemStack): List<Component> {
-        val stats = extractStats(item)
-        return listOf(
-            Component.text("${COLOR_AQUA}Nível: ${stats.level}"),
-            Component.text("${COLOR_GOLD}Pontos: ${stats.points}")
-        )
-    }
-
     fun getScoreboardContent(item: ItemStack): Pair<String, List<String>> {
         val stats = extractStats(item)
         val isMax = stats.level >= configManager.getEvolutionSettings().maxLevel
@@ -77,16 +70,15 @@ class ItemDescriptionFormatter(
     }
 
     fun getScoreboardTitle(isMaxLvl: Boolean): String {
-        return configManager.getScoreboardTitle(isMaxLvl)
+        return if (isMaxLvl) scoreboardMaxTitle else scoreboardDefaultTitle
     }
 
     fun getScoreboardLines(stats: EvolutionStats, isMaxLvl: Boolean): List<String> {
-        return configManager.getScoreboardLines(isMaxLvl).map { line ->
+        val lines = if (isMaxLvl) scoreboardMaxLines else scoreboardDefaultLines
+        return lines.map { line ->
             applyPlaceholders(line, stats)
         }
     }
-
-
 
     private fun applyPlaceholders(text: String, stats: EvolutionStats): String {
         return text
@@ -97,26 +89,13 @@ class ItemDescriptionFormatter(
             .replace("{nextLvl}", stats.nextLvl.toString())
     }
 
-
-    private fun addEvolutionStats(item: ItemStack, description: MutableList<Component>) {
-        val stats = extractStats(item)
-        description.add(Component.text("${COLOR_GRAY}Usos: ${COLOR_GREEN}${stats.uses}"))
-        description.add(Component.text("${COLOR_GRAY}Pontos: ${COLOR_GOLD}${stats.points}"))
-        description.add(Component.text("${COLOR_GRAY}Progresso: ${COLOR_GREEN}${stats.toNext}${COLOR_GRAY}/${COLOR_GREEN}${stats.nextLvl} ${COLOR_GRAY}(${formatPercentage(stats.progress)})"))
-        description.add(Component.text(SEPARATOR))
-    }
-
-    private fun formatPercentage(value: Double): String {
-        return String.format("%.1f%%", value * 100)
-    }
-
-    fun getProgressBar(progress: Double, length: Int = 20): String {
-        val filled = (progress * length).toInt()
-        val empty = length - filled
-        val bar = StringBuilder(COLOR_GREEN)
-        repeat(filled) { bar.append("█") }
-        bar.append(COLOR_GRAY)
-        repeat(empty) { bar.append("█") }
-        return bar.toString()
-    }
+//    fun getProgressBar(progress: Double, length: Int = 20): String {
+//        val filled = (progress * length).toInt()
+//        val empty = length - filled
+//        val bar = StringBuilder("§a")
+//        repeat(filled) { bar.append("█") }
+//        bar.append("§7")
+//        repeat(empty) { bar.append("█") }
+//        return bar.toString()
+//    }
 }

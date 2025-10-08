@@ -12,6 +12,10 @@ interface DisposableService {
     fun dispose()
 }
 
+interface ReloadableService {
+    fun onConfigReload()
+}
+
 /**
  * ServiceContainer completo com injeção de dependência por construtor e gerenciamento de ciclo de vida.
  */
@@ -31,8 +35,12 @@ class ServiceContainer(private val plugin: JavaPlugin) {
 
     fun <T : Any> registerSingleton(serviceClass: KClass<T>) {
         serviceDefinitions[serviceClass] = ServiceDefinition(ServiceType.SINGLETON)
-        instances[serviceClass] = createInstance(serviceClass) // CRIA AQUI (sem initialize)
+        // ✅ NÃO inicialize aqui, apenas crie e armazene
+        val instance = createInstance(serviceClass)
+        instances[serviceClass] = instance
     }
+
+
 
     fun <T : Any> registerFactory(serviceClass: KClass<T>) {
         serviceDefinitions[serviceClass] = ServiceDefinition(ServiceType.FACTORY)
@@ -76,8 +84,16 @@ class ServiceContainer(private val plugin: JavaPlugin) {
     }
 
     fun initializeServices() {
+        // ✅ Inicializa todos os serviços de uma vez, na ordem correta
         instances.values.filterIsInstance<InitializableService>().forEach { service ->
             service.initialize()
+        }
+    }
+
+    fun reloadServices() {
+        plugin.logger.info("Notificando serviços para recarregar configurações...")
+        instances.values.filterIsInstance<ReloadableService>().forEach { service ->
+            service.onConfigReload()
         }
     }
 
