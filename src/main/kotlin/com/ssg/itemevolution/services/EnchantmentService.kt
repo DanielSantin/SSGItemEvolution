@@ -1,6 +1,5 @@
 package com.ssg.itemevolution.services
 
-import com.ssg.itemevolution.ItemEvolutionPlugin
 import com.ssg.itemevolution.utils.ConfigManager
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
@@ -114,15 +113,7 @@ class EnchantmentService(
      * @return Lista com os nomes dos encantamentos (sem namespace)
      */
     fun getCurrentEnchantmentNames(item: ItemStack): List<String> {
-        return item.enchantments.keys.map { enchant ->
-            // Remove o namespace (minecraft:) se existir
-            val key = enchant.key.toString()
-            if (key.contains(":")) {
-                key.substringAfter(":")
-            } else {
-                key
-            }
-        }
+        return item.enchantments.keys.map { it.key.toString() } // mantém o namespace
     }
 
     /**
