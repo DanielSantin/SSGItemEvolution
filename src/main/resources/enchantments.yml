@@ -1,18 +1,13 @@
   enchantments:
     desabar:
-      display-name: "Desabar"
       max-level: 3
       point-costs: [10, 25, 45]
       item-costs:
         - "3 oak_log"
         - "5 oak_log"
         - "8 oak_log"
-      description:
-        - "Quebra múltiplos blocos de madeira"
-        - "quando agachado"
 
     efficiency:
-      display-name: "Eficiência"
       max-level: 6
       point-costs: [4, 6, 8, 12, 14, 18]
       item-costs:
@@ -24,7 +19,6 @@
         - "64 redstone_block"
 
     unbreaking:
-      display-name: "Inquebrável"
       max-level: 4
       point-costs: [6, 8, 12, 14]
       item-costs:
@@ -34,7 +28,6 @@
         - "1 netherite_scrap"
 
     fortune:
-      display-name: "Fortuna"
       max-level: 4
       point-costs: [6, 8, 12, 14]
       item-costs:
@@ -44,21 +37,18 @@
         - "4 rabbit_foot"
 
     silk_touch:
-      display-name: "Toque Suave"
       max-level: 1
       point-costs: [10]
       item-costs:
         - "1 ghast_tear"
 
     mending:
-      display-name: "Remendo"
       max-level: 1
       point-costs: [8]
       item-costs:
         - "1 nexo:mending_book"
 
     looting:
-      display-name: "Pilhagem"
       max-level: 4
       point-costs: [6, 8, 12, 14]
       item-costs:
@@ -68,7 +58,6 @@
         - "4 rabbit_foot"
 
     sharpness:
-      display-name: "Afiação"
       max-level: 5
       point-costs: [6, 12, 18, 24, 30]
       item-costs:
@@ -79,7 +68,6 @@
         - "10 flint"
 
     fire_aspect:
-      display-name: "Aspecto Flamejante"
       max-level: 2
       point-costs: [8, 16]
       item-costs:
@@ -87,7 +75,6 @@
         - "2 blaze_powder"
 
     knockback:
-      display-name: "Repulsão"
       max-level: 2
       point-costs: [6, 12]
       item-costs:
@@ -95,7 +82,6 @@
         - "2 slime_ball"
 
     smite:
-      display-name: "Ruína dos Mortos-Vivos"
       max-level: 5
       point-costs: [4, 8, 12, 16, 20]
       item-costs:
@@ -106,7 +92,6 @@
         - "16 bone"
 
     bane_of_arthropods:
-      display-name: "Aniquilação de Artrópodes"
       max-level: 5
       point-costs: [4, 8, 12, 16, 20]
       item-costs:
@@ -115,6 +100,15 @@
         - "4 spider_eye"
         - "8 spider_eye"
         - "16 spider_eye"
+
+  enchantment-groups:
+    harvesting:
+      mutually-exclusive: true
+      enchantments: [fortune, silk_touch]
+
+    damage-type:
+      mutually-exclusive: true
+      enchantments: [sharpness, smite, bane_of_arthropods]
 
   tool-compatibility:
     sword: [looting, sharpness, fire_aspect, knockback, smite, bane_of_arthropods, unbreaking, mending]

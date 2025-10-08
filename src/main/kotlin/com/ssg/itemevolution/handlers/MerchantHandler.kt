@@ -12,10 +12,12 @@ import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextDecoration
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.Sound
+import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemFlag
@@ -110,81 +112,162 @@ class MerchantHandler(
         if (!config.contains("enchantments")) return
 
         val enchantments = config.getConfigurationSection("enchantments")?.getKeys(false) ?: return
-
-        // Lista de encantos permitidos pra essa ferramenta
         val allowedEnchantments = config.getStringList("tool-compatibility.$toolType")
 
         for (enchantName in enchantments) {
             if (!allowedEnchantments.contains(enchantName)) continue
 
-            val enchantSection = config.getConfigurationSection("enchantments.$enchantName") ?: continue
+            // Se for incompatível → trade bloqueada
+            if (!enchantmentService.isEnchantmentCompatible(tool, enchantName)) {
+                createBlockedTrade(tool, enchantName, config, trades)
+                continue
+            }
 
-            val costPoints = enchantSection.getIntegerList("point-costs")
-            val costItems = enchantSection.getStringList("item-costs")
+            // Se for compatível → trade normal
+            createEnchantmentTrade(tool, enchantName, config, trades)
+        }
+    }
 
-            val currentLevel = enchantmentService.getEnchantmentLevel(tool, enchantName)
-            val nextLevel = currentLevel + 1
 
-            if (nextLevel > costPoints.size) continue // Nível máximo atingido
+    private fun createBlockedTrade(
+        tool: ItemStack,
+        enchantName: String,
+        config: FileConfiguration,
+        trades: MutableList<MerchantRecipe>
+    ) {
+        val enchantSection = config.getConfigurationSection("enchantments.$enchantName") ?: return
+        val costItems = enchantSection.getStringList("item-costs")
+        val currentLevel = enchantmentService.getEnchantmentLevel(tool, enchantName)
+        val rawCostString = costItems.getOrNull(currentLevel) ?: return
+        val cost = parseOrCreateCostItem(rawCostString)
 
-            val requiredPoints = costPoints.getOrNull(currentLevel) ?: continue
-            val currentPoints = getCurrentPoints(tool)
+        // Marcar como item bloqueado
+        cost.addUnsafeEnchantment(Enchantment.UNBREAKING, 10)
+        val meta = cost.itemMeta
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
 
-            val rawCostString = costItems.getOrNull(currentLevel) ?: continue
-            val trimmed = rawCostString.trim()
+        val conflicting = enchantmentService.getConflictingEnchantments(enchantName)
+        val conflictNames = conflicting.joinToString(", ") { it.replace("_", " ").capitalize() }
 
-            val qtyRegex = Regex("^([0-9]+)x?\\s+(.+)$")
-            val match = qtyRegex.find(trimmed)
+        meta.lore(listOf(
+            Component.text("⚠ Incompatível com:").color(NamedTextColor.RED).decoration(TextDecoration.ITALIC, false),
+            Component.text(conflictNames).color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+        ))
+        cost.itemMeta = meta
 
-            val quantity = match?.groupValues?.get(1)?.toIntOrNull() ?: 1
-            val itemSpec = match?.groupValues?.get(2) ?: trimmed
+        val blockedTool =  enchantmentService.enchantItem(tool.clone(), enchantName, 1)
 
-            val cost: ItemStack = if (itemSpec.startsWith("nexo:")) {
-                val itemId = itemSpec.removePrefix("nexo:").trim()
-                try {
-                    val itemBuilder = NexoItems.itemFromId(itemId)
-                    if (itemBuilder == null) {
-                        plugin.logger.warning("ID do Nexo inválido: $itemId")
-                        continue
+        val recipe = MerchantRecipe(blockedTool, 0) // maxUses = 0
+        recipe.addIngredient(tool)
+        recipe.addIngredient(cost)
+        trades.add(recipe)
+    }
+
+
+    private fun createEnchantmentTrade(
+        tool: ItemStack,
+        enchantName: String,
+        config: FileConfiguration,
+        trades: MutableList<MerchantRecipe>
+    ) {
+        val enchantSection = config.getConfigurationSection("enchantments.$enchantName") ?: return
+        val costPoints = enchantSection.getIntegerList("point-costs")
+        val costItems = enchantSection.getStringList("item-costs")
+
+        val currentLevel = enchantmentService.getEnchantmentLevel(tool, enchantName)
+        val nextLevel = currentLevel + 1
+        if (nextLevel > costPoints.size) return
+
+        val requiredPoints = costPoints.getOrNull(currentLevel) ?: return
+        val currentPoints = getCurrentPoints(tool)
+        val rawCostString = costItems.getOrNull(currentLevel) ?: return
+        val cost = parseOrCreateCostItem(rawCostString)
+
+        // Se pontos insuficientes → trade "cinza"
+        if (requiredPoints > currentPoints) {
+            makeInsufficientPointsTrade(tool, enchantName, cost, trades, requiredPoints, currentPoints)
+            return
+        }
+
+        // Aplicar encantamento de verdade
+        val enchantedTool = enchantmentService.enchantItem(tool, enchantName, nextLevel)
+        reducePoints(enchantedTool, requiredPoints)
+
+        if (visualEnchantmentService.hasVisualModel(enchantName)) {
+            visualEnchantmentService.applyVisualModel(enchantedTool, enchantName)
+        }
+
+        val recipe = MerchantRecipe(enchantedTool, 1)
+        recipe.addIngredient(tool)
+        recipe.addIngredient(cost)
+        trades.add(recipe)
+    }
+
+
+    private fun makeInsufficientPointsTrade(
+        tool: ItemStack,
+        enchantName: String,
+        cost: ItemStack,
+        trades: MutableList<MerchantRecipe>,
+        required: Int,
+        current: Int
+    ) {
+        cost.addUnsafeEnchantment(Enchantment.UNBREAKING, 10)
+        val meta = cost.itemMeta
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
+        meta.lore(listOf(
+            Component.text("Pontos insuficientes: $current/$required")
+                .color(NamedTextColor.RED)
+                .decoration(TextDecoration.ITALIC, false)
+        ))
+        cost.itemMeta = meta
+
+        val previewTool = enchantmentService.enchantItem(tool, enchantName, enchantmentService.getEnchantmentLevel(tool, enchantName) + 1)
+
+        val recipe = MerchantRecipe(previewTool, 0) // bloqueado
+        recipe.addIngredient(tool)
+        recipe.addIngredient(cost)
+        trades.add(recipe)
+    }
+
+
+    /**
+     * Auxiliar para processar o custo do item
+     */
+    private fun parseOrCreateCostItem(rawCostString: String): ItemStack {
+        val trimmed = rawCostString.trim()
+        val qtyRegex = Regex("^([0-9]+)x?\\s+(.+)$")
+        val match = qtyRegex.find(trimmed)
+
+        val quantity = match?.groupValues?.get(1)?.toIntOrNull() ?: 1
+        val itemSpec = match?.groupValues?.get(2) ?: trimmed
+
+        return if (itemSpec.startsWith("nexo:")) {
+            val itemId = itemSpec.removePrefix("nexo:").trim()
+            try {
+                val itemBuilder = NexoItems.itemFromId(itemId)
+                if (itemBuilder == null) {
+                    plugin.logger.warning("ID do Nexo inválido: $itemId")
+                    ItemStack(Material.BARRIER).apply {
+                        val meta = itemMeta
+                        meta.displayName(Component.text("Item Inválido").color(NamedTextColor.RED))
+                        itemMeta = meta
                     }
+                } else {
                     val itemStack = itemBuilder.build()
                     itemStack.amount = quantity.coerceAtLeast(1).coerceAtMost(itemStack.maxStackSize)
                     itemStack
-                } catch (e: Exception) {
-                    plugin.logger.warning("Erro ao criar item Nexo ($itemId): ${e.message}")
-                    continue
                 }
-            } else {
-                parseItemStack(rawCostString)
-            }
-
-            // Marcar item como indisponível se pontos insuficientes
-            if (requiredPoints > currentPoints) {
-                cost.addUnsafeEnchantment(Enchantment.UNBREAKING, 10)
-                val meta = cost.itemMeta
-                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
-                meta.lore(listOf(
-                    Component.text("Pontos insuficientes: $currentPoints/$requiredPoints")
-                        .color(NamedTextColor.RED)
-                ))
-                cost.itemMeta = meta
-            }
-
-            // Aplicar encantamento usando o novo sistema
-            val enchantedTool = enchantmentService.enchantItem(tool, enchantName, nextLevel)
-
-            // Reduzir pontos apenas se teve sucesso
-            if (enchantmentService.hasEnchantment(enchantedTool, enchantName)) {
-                reducePoints(enchantedTool, requiredPoints)
-                if (visualEnchantmentService.hasVisualModel(enchantName)) {
-                    visualEnchantmentService.applyVisualModel(enchantedTool, enchantName)
+            } catch (e: Exception) {
+                plugin.logger.warning("Erro ao criar item Nexo ($itemId): ${e.message}")
+                ItemStack(Material.BARRIER).apply {
+                    val meta = itemMeta
+                    meta.displayName(Component.text("Erro ao Carregar").color(NamedTextColor.RED))
+                    itemMeta = meta
                 }
-
-                val recipe = MerchantRecipe(enchantedTool, 999)
-                recipe.addIngredient(tool)
-                recipe.addIngredient(cost)
-                trades.add(recipe)
             }
+        } else {
+            parseItemStack(rawCostString)
         }
     }
 
