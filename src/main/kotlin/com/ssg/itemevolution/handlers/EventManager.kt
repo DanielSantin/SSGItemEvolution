@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class EventManager(private val plugin: JavaPlugin) : InitializableService, DisposableService {
 
-    private val enchantmentHandlers = ConcurrentHashMap<String, MutableList<EnchantmentEventHandler>>()
+    private val enchantmentHandlers = ConcurrentHashMap<String, ConcurrentHashMap<EnchantmentEventType, MutableList<EnchantmentEventHandler>>>()
     private val itemUsageHandlers = mutableListOf<ItemUsageEventHandler>()
 
     override fun initialize() {
@@ -33,41 +33,58 @@ class EventManager(private val plugin: JavaPlugin) : InitializableService, Dispo
     /**
      * Registra um handler para encantamento específico
      */
-    fun registerEnchantmentHandler(enchantmentKey: String, handler: EnchantmentEventHandler) {
-        enchantmentHandlers.computeIfAbsent(enchantmentKey) { mutableListOf() }.add(handler)
+    fun registerEnchantmentHandler(
+        enchantmentKey: String,
+        handler: EnchantmentEventHandler,
+        eventType: EnchantmentEventType
+    ) {
+        val typeMap = enchantmentHandlers.computeIfAbsent(enchantmentKey) { ConcurrentHashMap() }
+        typeMap.computeIfAbsent(eventType) { mutableListOf() }.add(handler)
     }
 
     /**
      * Dispara evento de uso de encantamento
      */
     fun fireEnchantmentEvent(event: EnchantmentEvent): EnchantmentEventResult {
-        plugin.logger.info("Enviando evento de encantamento para ${event.enchantmentKey}")
-        val handlers = enchantmentHandlers[event.enchantmentKey] ?: return EnchantmentEventResult.IGNORED
-        plugin.logger.info("Encontramos ${handlers.size} handlers para o encantamento ${event.enchantmentKey}")
+        plugin.logger.info("Enviando evento de encantamento ${event.type} para ${event.enchantmentKey}")
+
+        val typeMap = enchantmentHandlers[event.enchantmentKey]
+            ?: return EnchantmentEventResult.IGNORED
+
+        // AQUI: Pegue a lista de handlers específicos para o tipo de evento
+        val handlers = typeMap[event.type]
+            ?: return EnchantmentEventResult.IGNORED
+
+        plugin.logger.info("Encontramos ${handlers.size} handlers para ${event.enchantmentKey}:${event.type}")
 
         var result = EnchantmentEventResult.IGNORED
         for (handler in handlers) {
             try {
-                plugin.logger.info("Executando handler de encantamento ${event.enchantmentKey}")
-                plugin.logger.info("Resultado: ${event.type}")
+                // Seu loop de execução e verificação de cancelamento permanece o mesmo
+                plugin.logger.info("Executando handler de encantamento ${event.enchantmentKey} para o tipo ${event.type}")
                 val handlerResult = handler.handle(event)
+
+                // Prioriza CANCELLED, depois HANDLED sobre IGNORED
                 if (handlerResult != EnchantmentEventResult.IGNORED) {
-                    result = handlerResult
+                    // Mantenha o resultado mais importante (CANCELLED > HANDLED > IGNORED)
+                    if (result != EnchantmentEventResult.CANCELLED) {
+                        result = handlerResult
+                    }
                 }
 
                 // Se foi cancelado, para aqui
                 if (handlerResult == EnchantmentEventResult.CANCELLED) {
+                    result = EnchantmentEventResult.CANCELLED // Garante que o retorno seja CANCELLED
                     break
                 }
             } catch (e: Exception) {
-                plugin.logger.warning("Erro ao executar handler de encantamento ${event.enchantmentKey}: ${e.message}")
+                plugin.logger.warning("Erro ao executar handler de encantamento ${event.enchantmentKey}:${event.type}: ${e.message}")
                 e.printStackTrace()
             }
         }
 
         return result
     }
-
     /**
      * Dispara evento de uso de item
      */

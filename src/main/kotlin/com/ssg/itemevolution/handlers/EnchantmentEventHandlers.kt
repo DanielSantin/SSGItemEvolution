@@ -89,27 +89,22 @@ class EnchantmentEventHandlers(
         }
     }
 
-    val eternaHandler = object : EnchantmentEventHandler {
+    val eternaBeforeUseHandler = object : EnchantmentEventHandler {
         override fun handle(event: EnchantmentEvent): EnchantmentEventResult {
-            return when (event.type) {
-                EnchantmentEventType.BEFORE_USE -> handleBeforeUse(event)
-                EnchantmentEventType.AFTER_USE -> handleAfterUse(event)
-                else -> EnchantmentEventResult.IGNORED
-            }
-        }
-
-        private fun handleBeforeUse(event: EnchantmentEvent): EnchantmentEventResult {
+            // Não precisa verificar event.type aqui!
             if (eternaEnchantment.preventBrokenItemUse(event.player, event.item)) {
                 return EnchantmentEventResult.CANCELLED
             }
             return EnchantmentEventResult.IGNORED
         }
+    }
 
-        private fun handleAfterUse(event: EnchantmentEvent): EnchantmentEventResult {
+    val eternaAfterUseHandler = object : EnchantmentEventHandler {
+        override fun handle(event: EnchantmentEvent): EnchantmentEventResult {
+            // Não precisa verificar event.type aqui!
             if (eternaEnchantment.checkAndPreserveItem(event.player, event.item)) {
                 return EnchantmentEventResult.HANDLED
             }
             return EnchantmentEventResult.IGNORED
         }
-    }
-}
+    }}
