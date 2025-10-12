@@ -12,11 +12,9 @@ import com.ssg.itemevolution.handlers.EnchantmentRegistrationHandler
 import com.ssg.itemevolution.handlers.MerchantHandler
 import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.listeners.ItemEvolutionListener
-import com.ssg.itemevolution.listeners.MerchantInteractionListener
 import com.ssg.itemevolution.services.EnchantmentService
 import com.ssg.itemevolution.services.ItemDataService
 import com.ssg.itemevolution.services.ItemEvolutionService
-import com.ssg.itemevolution.services.VisualEnchantmentService
 import com.ssg.itemevolution.ui.ItemDescriptionFormatter
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -41,13 +39,11 @@ class ItemEvolutionPlugin : JavaPlugin() {
         container.registerSingleton(EnchantmentService::class)
         container.registerSingleton(SoulToolService::class)
 
-        container.registerSingleton(VisualEnchantmentService::class)
         container.registerSingleton(MerchantHandler::class)
 
         container.registerSingleton(SoulToolDialog::class)
         container.registerSingleton(EnchantmentRegistrationHandler::class)
         container.registerSingleton(ItemEvolutionListener::class)
-        container.registerSingleton(MerchantInteractionListener::class)
         container.registerSingleton(CommandHandler::class)
 
         container.initializeServices()
@@ -56,13 +52,11 @@ class ItemEvolutionPlugin : JavaPlugin() {
         val commandHandler = container.get(CommandHandler::class)
         val enchantmentRegistrationHandler = container.get(EnchantmentRegistrationHandler::class)
         val itemEvolutionListener = container.get(ItemEvolutionListener::class)
-        val merchantInteractionListener = container.get(MerchantInteractionListener::class)
 
         this.getCommand("ssgitemevolution")?.setExecutor(commandHandler)
         this.getCommand("ssgitemevolution")?.tabCompleter = commandHandler
         enchantmentRegistrationHandler.registerEnchantmentEventHandlers()
         server.pluginManager.registerEvents(itemEvolutionListener, this)
-        server.pluginManager.registerEvents(merchantInteractionListener, this)
     }
     override fun onDisable() {
         container.dispose()

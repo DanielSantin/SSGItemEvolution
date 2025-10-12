@@ -21,7 +21,6 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
-import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.inventory.ItemStack
@@ -135,14 +134,8 @@ class ItemEvolutionListener(
     }
 
 
-    @EventHandler
-    fun onInventoryOpen(event: InventoryOpenEvent) {
-        val player = event.player as? Player ?: return
-        merchantHandler.restoreToolItem(player)
-    }
 
     // MÉTODOS AUXILIARES
-
     private fun isSmithingTable(block: org.bukkit.block.Block?): Boolean {
         // Verificar se é uma mesa de ferreiro vanilla
         if (block == null) return false
@@ -151,7 +144,6 @@ class ItemEvolutionListener(
         } else {
             if (block.type == Material.SMITHING_TABLE) return true
         }
-
         return false
     }
 
@@ -282,15 +274,3 @@ class ItemEvolutionListener(
     }
 }
 
-/**
- * Listener separado para interações com o merchant
- */
-class MerchantInteractionListener(
-    private val merchantHandler: MerchantHandler
-) : Listener {
-    @EventHandler
-    fun onInventoryOpen(event: InventoryOpenEvent) {
-        val player = event.player as? Player ?: return
-        merchantHandler.restoreToolItem(player)
-    }
-}

@@ -8,7 +8,6 @@ import com.ssg.itemevolution.services.EnchantmentService
 import com.ssg.itemevolution.services.ItemEvolutionService
 import com.ssg.itemevolution.services.ItemRepairService
 import com.ssg.itemevolution.services.MaterialUpgradeService
-import com.ssg.itemevolution.services.VisualEnchantmentService
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
 import net.kyori.adventure.text.Component
@@ -31,14 +30,10 @@ class MerchantHandler(
     private val plugin: ItemEvolutionPlugin,
     private val configManager: ConfigManager,
     private val enchantmentService: EnchantmentService,
-    private val visualEnchantmentService: VisualEnchantmentService,
     private val itemEvolutionService: ItemEvolutionService,
     private val itemRepairService: ItemRepairService,
     private val materialUpgradeService: MaterialUpgradeService,
 ) {
-    private val toolItemKey = NamespacedKey(plugin, "tool_item")
-
-
     fun openMerchant(player: Player, tool: ItemStack) {
         if (!itemEvolutionService.isValidTool(tool)) {
             player.sendMessage("§4[SSG] §2Você precisa usar uma ferramenta válida na mão para acessar isso")
@@ -86,10 +81,6 @@ class MerchantHandler(
         val upgradeItemStack = materialUpgradeService.getUpgradeItemStack(tool)
         if (upgradeItemStack != null) {
             val upgradedTool = itemEvolutionService.improveItem(tool)
-
-            // 🔧 ATUALIZAR MODELO VISUAL ao fazer upgrade
-            visualEnchantmentService.updateVisualModelOnUpgrade(tool, upgradedTool)
-
             val upgradeRecipe = MerchantRecipe(upgradedTool, 999)
             upgradeRecipe.addIngredient(tool)
             upgradeRecipe.addIngredient(upgradeItemStack)
@@ -184,11 +175,6 @@ class MerchantHandler(
         // Aplicar encantamento de verdade
         val enchantedTool = enchantmentService.enchantItem(tool, enchantName, nextLevel)
         reducePoints(enchantedTool, requiredPoints)
-
-        if (visualEnchantmentService.hasVisualModel(enchantName)) {
-            visualEnchantmentService.applyVisualModel(enchantedTool, enchantName)
-        }
-
         val recipe = MerchantRecipe(enchantedTool, 1)
         recipe.addIngredient(tool)
         recipe.addIngredient(cost)
@@ -308,28 +294,5 @@ class MerchantHandler(
         }
 
         return item
-    }
-
-    private fun deserializeItemStack(data: String): ItemStack? {
-        val parts = data.split(":")
-        if (parts.size != 2) return null
-
-        val material = Material.getMaterial(parts[0]) ?: return null
-        val amount = parts[1].toIntOrNull() ?: 1
-
-        return ItemStack(material, amount)
-    }
-
-    fun restoreToolItem(player: Player) {
-        val meta = player.persistentDataContainer
-        val toolData = meta.get(toolItemKey, PersistentDataType.STRING)
-
-        if (toolData != null) {
-            val tool = deserializeItemStack(toolData)
-            if (tool != null) {
-                player.inventory.addItem(tool)
-            }
-            meta.remove(toolItemKey)
-        }
     }
 }
