@@ -1,5 +1,6 @@
 package com.ssg.itemevolution.handlers
 
+import EnchantmentEventResult
 import com.ssg.itemevolution.enchantments.mining.AreaMiningEnchantment
 import com.ssg.itemevolution.enchantments.mining.DesabarEnchantment
 import com.ssg.itemevolution.enchantments.mining.VeinMiningEnchantment

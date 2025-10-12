@@ -8,6 +8,7 @@ import com.ssg.itemevolution.keys.ToolType
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 import kotlin.math.floor
+import ItemUsageType
 
 /**
  * Serviço responsável pela lógica de evolução de itens.
@@ -17,7 +18,8 @@ class ItemEvolutionService(
     private val configManager: ConfigManager,
     private val itemDataService: ItemDataService,
     private val itemMetaTransferService: ItemMetaTransferService,
-    private val materialUpgradeService: MaterialUpgradeService
+    private val materialUpgradeService: MaterialUpgradeService,
+    private val toolBlockService: ToolBlockService
 )  : InitializableService, ReloadableService {
 
     private val levelUseTable: MutableMap<Material, List<Int>> = mutableMapOf()
@@ -85,7 +87,14 @@ class ItemEvolutionService(
     /**
      * Atualiza o item após uso, incrementando contador e verificando level up
      */
-    fun upgradeItem(item: ItemStack): ItemStack {
+    fun upgradeItem(item: ItemStack, usageType: ItemUsageType, blockMaterial: Material? = null): ItemStack {
+
+        if (usageType == ItemUsageType.BLOCK_BREAK && blockMaterial != null) {
+            if (!toolBlockService.isValidBlockForToolEvolution(item.type, blockMaterial)) {
+                return item
+            }
+        }
+
         // 1. Obter os dados atuais do item
         val currentCounter = itemDataService.getCounter(item)
         val currentUses = itemDataService.getUses(item)
@@ -264,3 +273,4 @@ class ItemEvolutionService(
         }
     }
 }
+

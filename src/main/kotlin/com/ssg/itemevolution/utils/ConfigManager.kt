@@ -36,7 +36,6 @@ class ConfigManager(
         loadCustomConfig("enchantments.yml")
         loadCustomConfig("merchant.yml")
         loadCustomConfig("scoreboard.yml")
-        loadCustomConfig("visual_enchantments.yml")
 
     }
 
@@ -82,7 +81,6 @@ class ConfigManager(
         loadCustomConfig("enchantments.yml")
         loadCustomConfig("merchant.yml")
         loadCustomConfig("scoreboard.yml")
-        loadCustomConfig("visual_enchantments.yml")
 
         // NOTIFICAR SERVIÇOS SOBRE O RELOAD
         // Como o acesso é via lateinit, garantimos que eles estão setados antes de chamar.

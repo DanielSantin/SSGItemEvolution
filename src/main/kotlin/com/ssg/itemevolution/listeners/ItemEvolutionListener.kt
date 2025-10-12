@@ -1,5 +1,7 @@
 package com.ssg.itemevolution.listeners
 
+import EnchantmentEventType
+import ItemUsageType
 import com.nexomc.nexo.api.NexoFurniture
 import com.nexomc.nexo.api.events.furniture.NexoFurnitureInteractEvent
 import com.nexomc.nexo.mechanics.furniture.FurnitureMechanic
@@ -85,20 +87,24 @@ class ItemEvolutionListener(
 
         // Processar evolução do item
         if (!event.isCancelled){
-            processItemEvolution(player, tool, ItemUsageType.BLOCK_BREAK)
+            processItemEvolution(player, tool, ItemUsageType.BLOCK_BREAK, block.type)
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     fun onEntityDamageByEntity(event: EntityDamageByEntityEvent) {
         val attacker = event.damager as? Player ?: return
         val tool = attacker.inventory.itemInMainHand
+
+        if (event.finalDamage <= 0) return
 
         // Processar evolução do item
         processItemEvolution(attacker, tool, ItemUsageType.ATTACK)
 
         // Processar encantamentos de combate
         processEnchantments(attacker, tool, event.entity, EnchantmentEventType.ENTITY_DAMAGE, event)
+
+
     }
 
     @EventHandler
@@ -147,10 +153,10 @@ class ItemEvolutionListener(
         return false
     }
 
-    private fun processItemEvolution(player: Player, tool: ItemStack, usageType: ItemUsageType) {
+    private fun processItemEvolution(player: Player, tool: ItemStack, usageType: ItemUsageType, blockMaterial: Material? = null) {
         if (!soulToolService.hasSoul(tool)) return
 
-        val upgradedTool = itemEvolutionService.upgradeItem(tool)
+        val upgradedTool = itemEvolutionService.upgradeItem(tool, usageType, blockMaterial)
 
         // Disparar evento de uso do item
         val usageEvent = EventBuilder.itemUsage(usageType)
@@ -264,7 +270,7 @@ class ItemEvolutionListener(
 
         armorPieces.filterNotNull().forEach { armor ->
             if (itemEvolutionService.isValidTool(armor) && soulToolService.hasSoul(armor)) {
-                val upgradedArmor = itemEvolutionService.upgradeItem(armor)
+                val upgradedArmor = itemEvolutionService.upgradeItem(armor, ItemUsageType.TAKE_DAMAGE)
                 armor.itemMeta = upgradedArmor.itemMeta
 
                 // Processar encantamentos de defesa

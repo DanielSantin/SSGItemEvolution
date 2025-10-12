@@ -1,5 +1,9 @@
 package com.ssg.itemevolution.handlers
 
+import EnchantmentEventResult
+import EnchantmentEventType
+import ItemUsageEventResult
+import ItemUsageType
 import com.ssg.itemevolution.core.DisposableService
 import com.ssg.itemevolution.core.InitializableService
 import org.bukkit.entity.Player
@@ -13,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap
 class EventManager(private val plugin: JavaPlugin) : InitializableService, DisposableService {
 
     private val enchantmentHandlers = ConcurrentHashMap<String, MutableList<EnchantmentEventHandler>>()
-    private val evolutionHandlers = mutableListOf<EvolutionEventHandler>()
     private val itemUsageHandlers = mutableListOf<ItemUsageEventHandler>()
 
     override fun initialize() {
@@ -22,7 +25,6 @@ class EventManager(private val plugin: JavaPlugin) : InitializableService, Dispo
 
     override fun dispose() {
         enchantmentHandlers.clear()
-        evolutionHandlers.clear()
         itemUsageHandlers.clear()
     }
 
@@ -34,22 +36,6 @@ class EventManager(private val plugin: JavaPlugin) : InitializableService, Dispo
     fun registerEnchantmentHandler(enchantmentKey: String, handler: EnchantmentEventHandler) {
         enchantmentHandlers.computeIfAbsent(enchantmentKey) { mutableListOf() }.add(handler)
     }
-
-    /**
-     * Registra um handler para eventos de evolução
-     */
-    fun registerEvolutionHandler(handler: EvolutionEventHandler) {
-        evolutionHandlers.add(handler)
-    }
-
-    /**
-     * Registra um handler para uso de itens
-     */
-    fun registerItemUsageHandler(handler: ItemUsageEventHandler) {
-        itemUsageHandlers.add(handler)
-    }
-
-    // DISPATCH DE EVENTOS
 
     /**
      * Dispara evento de uso de encantamento
@@ -75,28 +61,6 @@ class EventManager(private val plugin: JavaPlugin) : InitializableService, Dispo
                 }
             } catch (e: Exception) {
                 plugin.logger.warning("Erro ao executar handler de encantamento ${event.enchantmentKey}: ${e.message}")
-                e.printStackTrace()
-            }
-        }
-
-        return result
-    }
-
-    /**
-     * Dispara evento de evolução
-     */
-    fun fireEvolutionEvent(event: EvolutionEvent): EvolutionEventResult {
-        var result = EvolutionEventResult.CONTINUE
-
-        for (handler in evolutionHandlers) {
-            try {
-                val handlerResult = handler.handle(event)
-                if (handlerResult == EvolutionEventResult.CANCELLED) {
-                    result = EvolutionEventResult.CANCELLED
-                    break
-                }
-            } catch (e: Exception) {
-                plugin.logger.warning("Erro ao executar handler de evolução: ${e.message}")
                 e.printStackTrace()
             }
         }
@@ -133,10 +97,6 @@ interface EnchantmentEventHandler {
     fun handle(event: EnchantmentEvent): EnchantmentEventResult
 }
 
-interface EvolutionEventHandler {
-    fun handle(event: EvolutionEvent): EvolutionEventResult
-}
-
 interface ItemUsageEventHandler {
     fun handle(event: ItemUsageEvent): ItemUsageEventResult
 }
@@ -167,19 +127,6 @@ data class EnchantmentEvent(
 )
 
 /**
- * Evento de evolução de item
- */
-data class EvolutionEvent(
-    val oldLevel: Int,
-    val newLevel: Int,
-    val type: EvolutionEventType,
-    val context: Map<String, Any> = emptyMap()
-) : CustomEvent(
-    context["player"] as Player,
-    context["item"] as ItemStack
-)
-
-/**
  * Evento de uso de item
  */
 data class ItemUsageEvent(
@@ -190,59 +137,12 @@ data class ItemUsageEvent(
     context["item"] as ItemStack
 )
 
-// ENUMS
-
-enum class EnchantmentEventType {
-    BLOCK_BREAK,
-    ENTITY_DAMAGE,
-    ENTITY_DAMAGED,
-    INTERACT,
-    PROJECTILE_HIT,
-    BEFORE_USE,
-    AFTER_USE,
-    ANVIL_APPLY,
-}
-
-enum class EnchantmentEventResult {
-    HANDLED,
-    CANCELLED,
-    IGNORED
-}
-
-enum class EvolutionEventType {
-    LEVEL_UP,
-    UPGRADE_MATERIAL,
-    GAIN_POINTS
-}
-
-enum class EvolutionEventResult {
-    CONTINUE,
-    CANCELLED
-}
-
-enum class ItemUsageType {
-    ATTACK,
-    BLOCK_BREAK,
-    TAKE_DAMAGE,
-    REPAIR,
-    UPGRADE
-}
-
-enum class ItemUsageEventResult {
-    CONTINUE,
-    CANCELLED
-}
-
 // BUILDER PARA EVENTOS
 
 class EventBuilder {
     companion object {
         fun enchantment(enchantmentKey: String, level: Int, type: EnchantmentEventType): EnchantmentEventBuilder {
             return EnchantmentEventBuilder(enchantmentKey, level, type)
-        }
-
-        fun evolution(oldLevel: Int, newLevel: Int, type: EvolutionEventType): EvolutionEventBuilder {
-            return EvolutionEventBuilder(oldLevel, newLevel, type)
         }
 
         fun itemUsage(type: ItemUsageType): ItemUsageEventBuilder {
@@ -266,24 +166,6 @@ class EnchantmentEventBuilder(
         require(context.containsKey("player")) { "Player é obrigatório" }
         require(context.containsKey("item")) { "Item é obrigatório" }
         return EnchantmentEvent(enchantmentKey, level, type, context.toMap())
-    }
-}
-
-class EvolutionEventBuilder(
-    private val oldLevel: Int,
-    private val newLevel: Int,
-    private val type: EvolutionEventType
-) {
-    private val context = mutableMapOf<String, Any>()
-
-    fun player(player: Player) = apply { context["player"] = player }
-    fun item(item: ItemStack) = apply { context["item"] = item }
-    fun context(key: String, value: Any) = apply { context[key] = value }
-
-    fun build(): EvolutionEvent {
-        require(context.containsKey("player")) { "Player é obrigatório" }
-        require(context.containsKey("item")) { "Item é obrigatório" }
-        return EvolutionEvent(oldLevel, newLevel, type, context.toMap())
     }
 }
 
