@@ -15,14 +15,6 @@ class ItemDataService(
 ) {
     // ===== SOUL TOOL =====
 
-    fun isSoulTool(item: ItemStack): Boolean {
-        val meta = item.itemMeta ?: return false
-        return meta.persistentDataContainer.get(
-            EvolutionKey.SOUL_TOOL.key(plugin),
-            PersistentDataType.INTEGER
-        ) == 1
-    }
-
     fun setSoulTool(item: ItemStack, value: Boolean) {
         val meta = item.itemMeta ?: return
         meta.persistentDataContainer.set(
@@ -32,10 +24,6 @@ class ItemDataService(
         )
         item.itemMeta = meta
     }
-
-    // ===== LEVEL =====
-    // REMOVIDO: A dependência circular foi quebrada
-    // Agora ItemEvolutionService chama setCounter diretamente
 
     // ===== COUNTER =====
 
@@ -59,8 +47,6 @@ class ItemDataService(
         item.itemMeta = meta
     }
 
-    // REMOVIDO: setCounterBasedOnLevel (causava dependência circular)
-    // Essa lógica foi movida para ItemEvolutionService
 
     // ===== USES =====
 
@@ -82,10 +68,6 @@ class ItemDataService(
             uses
         )
         item.itemMeta = meta
-    }
-
-    fun incrementUses(item: ItemStack) {
-        setUses(item, getUses(item) + 1)
     }
 
     // ===== POINTS =====
@@ -114,31 +96,6 @@ class ItemDataService(
         setPoints(item, getPoints(item) + points)
     }
 
-    fun removePoints(item: ItemStack, points: Int): Boolean {
-        val currentPoints = getPoints(item)
-        if (currentPoints < points) return false
-
-        setPoints(item, currentPoints - points)
-        return true
-    }
-
-    // ===== BULK OPERATIONS =====
-
-    /**
-     * Copia todos os dados de evolução de um item para outro
-     */
-    fun copyEvolutionData(source: ItemStack, target: ItemStack) {
-        val sourceMeta = source.itemMeta ?: return
-        val targetMeta = target.itemMeta ?: return
-
-        copyDataContainer(
-            sourceMeta.persistentDataContainer,
-            targetMeta.persistentDataContainer
-        )
-
-        target.itemMeta = targetMeta
-    }
-
     /**
      * Copia os dados de evolução entre containers
      */
@@ -150,26 +107,5 @@ class ItemDataService(
                 target.set(key, PersistentDataType.INTEGER, value)
             }
         }
-    }
-
-    /**
-     * Remove todos os dados de evolução de um item
-     */
-    fun clearEvolutionData(item: ItemStack) {
-        val meta = item.itemMeta ?: return
-        val container = meta.persistentDataContainer
-
-        for (evolutionKey in EvolutionKey.entries) {
-            container.remove(evolutionKey.key(plugin))
-        }
-
-        item.itemMeta = meta
-    }
-
-    /**
-     * Verifica se o item possui dados de evolução
-     */
-    fun hasEvolutionData(item: ItemStack): Boolean {
-        return isSoulTool(item)
     }
 }

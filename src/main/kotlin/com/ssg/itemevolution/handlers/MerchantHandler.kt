@@ -2,11 +2,12 @@ package com.ssg.itemevolution.handlers
 
 import com.nexomc.nexo.api.NexoItems
 import com.ssg.itemevolution.ItemEvolutionPlugin
-import com.ssg.itemevolution.utils.ItemUtils
 import com.ssg.itemevolution.utils.ConfigManager
 import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.isItemBroken
-import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.removeBrokenItemMark
 import com.ssg.itemevolution.services.EnchantmentService
+import com.ssg.itemevolution.services.ItemEvolutionService
+import com.ssg.itemevolution.services.ItemRepairService
+import com.ssg.itemevolution.services.MaterialUpgradeService
 import com.ssg.itemevolution.services.VisualEnchantmentService
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
@@ -23,30 +24,30 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.MerchantRecipe
-import org.bukkit.inventory.meta.Damageable
 import org.bukkit.inventory.meta.EnchantmentStorageMeta
 import org.bukkit.persistence.PersistentDataType
 
 class MerchantHandler(
     private val plugin: ItemEvolutionPlugin,
-    private val itemUtils: ItemUtils,
     private val configManager: ConfigManager,
     private val enchantmentService: EnchantmentService,
-    private val visualEnchantmentService: VisualEnchantmentService
+    private val visualEnchantmentService: VisualEnchantmentService,
+    private val itemEvolutionService: ItemEvolutionService,
+    private val itemRepairService: ItemRepairService,
+    private val materialUpgradeService: MaterialUpgradeService,
 ) {
     private val toolItemKey = NamespacedKey(plugin, "tool_item")
 
 
     fun openMerchant(player: Player, tool: ItemStack) {
-        if (!itemUtils.isValidTool(tool)) {
+        if (!itemEvolutionService.isValidTool(tool)) {
             player.sendMessage("§4[SSG] §2Você precisa usar uma ferramenta válida na mão para acessar isso")
             return
         }
 
         val trades = mutableListOf<MerchantRecipe>()
         val isItemBroken = isItemBroken(tool)
-        val repairCostMultiplier = if (isItemBroken) 2 else 1
-        addRepairTrade(tool, trades, repairCostMultiplier)
+        addRepairTrade(tool, trades)
 
         if(!isItemBroken){
             addUpgradeTrades(tool, trades)
@@ -69,31 +70,22 @@ class MerchantHandler(
         player.playSound(player.location, Sound.ITEM_ARMOR_EQUIP_LEATHER, 1.0f, 2.0f)
     }
 
-    private fun addRepairTrade(tool: ItemStack, trades: MutableList<MerchantRecipe>, repairCostMultiplier: Int = 1) {
-        val repairMaterial = itemUtils.getRepairMaterial(tool)
-        if (repairMaterial != null) {
-            val meta = tool.itemMeta as? Damageable
-            if (meta != null && meta.damage > 0) {
-                val repairCost = itemUtils.getRepairCost(tool) * repairCostMultiplier
-                val repairItems = ItemStack(repairMaterial, repairCost)
-                val repairedTool = tool.clone()
-                removeBrokenItemMark(repairedTool)
-                val repairedMeta = repairedTool.itemMeta as Damageable
-                repairedMeta.damage = 0
-                repairedTool.itemMeta = repairedMeta
+    private fun addRepairTrade(tool: ItemStack, trades: MutableList<MerchantRecipe>) {
+        if (!itemRepairService.canRepair(tool)) return
 
-                val repairRecipe = MerchantRecipe(repairedTool, 999)
-                repairRecipe.addIngredient(tool)
-                repairRecipe.addIngredient(repairItems)
-                trades.add(repairRecipe)
-            }
-        }
+        val repairItems = itemRepairService.getRepairItemStack(tool) ?: return
+        val repairedTool = itemRepairService.createRepairedItem(tool)
+
+        val repairRecipe = MerchantRecipe(repairedTool, 999)
+        repairRecipe.addIngredient(tool)
+        repairRecipe.addIngredient(repairItems)
+        trades.add(repairRecipe)
     }
 
     private fun addUpgradeTrades(tool: ItemStack, trades: MutableList<MerchantRecipe>) {
-        val upgradeItemStack = itemUtils.getUpgradeItemstack(tool)
+        val upgradeItemStack = materialUpgradeService.getUpgradeItemStack(tool)
         if (upgradeItemStack != null) {
-            val upgradedTool = itemUtils.improveItem(tool)
+            val upgradedTool = itemEvolutionService.improveItem(tool)
 
             // 🔧 ATUALIZAR MODELO VISUAL ao fazer upgrade
             visualEnchantmentService.updateVisualModelOnUpgrade(tool, upgradedTool)
@@ -107,7 +99,7 @@ class MerchantHandler(
 
     private fun addEnchantmentTrades(tool: ItemStack, trades: MutableList<MerchantRecipe>) {
         val config = configManager.getCustomConfig("enchantments.yml") ?: return
-        val toolType = itemUtils.testTool(tool)
+        val toolType = itemEvolutionService.getToolCategoryName(tool)
 
         if (!config.contains("enchantments")) return
 

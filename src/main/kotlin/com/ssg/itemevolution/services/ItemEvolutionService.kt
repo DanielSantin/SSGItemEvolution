@@ -108,18 +108,18 @@ class ItemEvolutionService(
     }
 
     /**
-     * Melhora o item para o próximo material (ex: ferro -> diamante)
+     * Melhora o item para o próximo material (ex: ferro → diamante)
      */
     fun improveItem(item: ItemStack): ItemStack {
         val nextMaterial = materialUpgradeService.getNextMaterial(item.type) ?: return item
 
-        // Criar novo item com material melhorado
+        // Criar item com material melhorado
         val newItem = ItemStack(nextMaterial, item.amount)
 
         // Transferir metadados
         itemMetaTransferService.transferMetadata(item, newItem, itemDataService)
 
-        // Resetar contador (começa evolução do zero)
+        // Reiniciar contador (começa evolução do zero)
         itemDataService.setCounter(newItem, 1)
 
         // Copiar encantamentos
@@ -157,28 +157,28 @@ class ItemEvolutionService(
 
     fun calculateLevelFromCounter(counter: Int, item: ItemStack): Int {
         val settings = configManager.getEvolutionSettings()
-        val max_level = settings.maxLevel
-        val min_level = settings.minLevel
+        val maxLevel = settings.maxLevel
+        val minLevel = settings.minLevel
 
         val counterList = getCounterListForMaterial(item.type)
-            ?: return min_level
+            ?: return minLevel
 
         val index = counterList.indexOfLast { requiredCounter ->
             counter >= requiredCounter
         }
 
-        return (index + 1).coerceIn(min_level, max_level)
+        return (index + 1).coerceIn(minLevel, maxLevel)
     }
 
     fun calculateCounterForLevel(level: Int, item: ItemStack): Int {
         val settings = configManager.getEvolutionSettings()
-        val max_level = settings.maxLevel
-        val min_level = settings.minLevel
+        val maxLevel = settings.maxLevel
+        val minLevel = settings.minLevel
 
         val counterList = getCounterListForMaterial(item.type)
             ?: return 999999999
 
-        val safeLevel = level.coerceIn(min_level, max_level)
+        val safeLevel = level.coerceIn(minLevel, maxLevel)
 
         return counterList.getOrNull(safeLevel - 1) ?: counterList.lastOrNull() ?: 0
     }

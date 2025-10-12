@@ -1,5 +1,7 @@
 package com.ssg.itemevolution.services
 
+import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.isItemBroken
+import com.ssg.itemevolution.enchantments.utility.EternaEnchantment.Companion.removeBrokenItemMark
 import com.ssg.itemevolution.keys.ToolType
 import org.bukkit.Material
 import org.bukkit.enchantments.Enchantment
@@ -12,8 +14,9 @@ import kotlin.math.ceil
  *
  * Gerencia cálculos de custo, materiais necessários e execução de reparos.
  */
-class ItemRepairService() {
+class ItemRepairService {
     private val REPAIR_COST_MULTIPLIER: Double = 3.0
+
     /**
      * Multiplicador usado no cálculo do custo de reparo.
      *
@@ -48,6 +51,72 @@ class ItemRepairService() {
         if (maxDurability == 0) return 0
 
         return ceil(REPAIR_COST_MULTIPLIER * damage / maxDurability).toInt()
+    }
+
+    /**
+     * Calcula o custo de reparo com multiplicador aplicado.
+     *
+     * Útil para penalidades (ex: item quebrado custa 2x mais para reparar).
+     *
+     * @param item Item a ser reparado
+     * @param multiplier Multiplicador do custo (default: 1)
+     * @return Número de materiais necessários
+     */
+    fun getRepairCostWithMultiplier(item: ItemStack, multiplier: Int = 1): Int {
+        return getRepairCost(item) * multiplier
+    }
+
+    /**
+     * Cria um ItemStack do material de reparo com a quantidade calculada.
+     *
+     * Considera automaticamente se o item está quebrado (2x custo).
+     *
+     * @param item Item a ser reparado
+     * @return ItemStack com material e quantidade, ou null se não for reparável
+     */
+    fun getRepairItemStack(item: ItemStack): ItemStack? {
+        val material = getRepairMaterial(item) ?: return null
+        val isBroken = isItemBroken(item)
+        val multiplier = if (isBroken) 2 else 1
+        val cost = getRepairCostWithMultiplier(item, multiplier)
+
+        return ItemStack(material, cost)
+    }
+
+    /**
+     * Cria uma cópia do item completamente reparado.
+     *
+     * Remove o dano e marca de item quebrado, se existir.
+     *
+     * @param item Item original
+     * @return Nova instância do item reparado
+     */
+    fun createRepairedItem(item: ItemStack): ItemStack {
+        val repaired = item.clone()
+        removeBrokenItemMark(repaired)
+
+        val meta = repaired.itemMeta as? Damageable
+        if (meta != null) {
+            meta.damage = 0
+            repaired.itemMeta = meta
+        }
+
+        return repaired
+    }
+
+    /**
+     * Verifica se o item pode ser reparado.
+     *
+     * Critérios:
+     * - Deve ter durabilidade
+     * - Deve estar danificado
+     * - Deve ter material de reparo disponível
+     *
+     * @param item Item a verificar
+     * @return true se pode ser reparado
+     */
+    fun canRepair(item: ItemStack): Boolean {
+        return needsRepair(item) && getRepairMaterial(item) != null
     }
 
     /**
@@ -89,31 +158,6 @@ class ItemRepairService() {
     }
 
     /**
-     * Repara o item completamente, removendo o dano.
-     *
-     * @param item Item a ser reparado
-     */
-    fun repairItem(item: ItemStack) {
-        val meta = item.itemMeta as? Damageable ?: return
-        meta.damage = 0
-        item.itemMeta = meta
-    }
-
-    /**
-     * Repara o item parcialmente, reduzindo o dano pela quantidade especificada.
-     *
-     * Útil para sistemas de reparo progressivo ou por partes.
-     *
-     * @param item Item a ser reparado
-     * @param amount Quantidade de dano a ser removida
-     */
-    fun repairItem(item: ItemStack, amount: Int) {
-        val meta = item.itemMeta as? Damageable ?: return
-        meta.damage = (meta.damage - amount).coerceAtLeast(0)
-        item.itemMeta = meta
-    }
-
-    /**
      * Verifica se o item está danificado e precisa de reparo.
      *
      * @param item Item a ser verificado
@@ -122,29 +166,6 @@ class ItemRepairService() {
     fun needsRepair(item: ItemStack): Boolean {
         val meta = item.itemMeta as? Damageable ?: return false
         return meta.damage > 0
-    }
-
-    /**
-     * Obtém a porcentagem de durabilidade restante do item.
-     *
-     * Retorna valor entre 0.0 (totalmente quebrado) e 1.0 (durabilidade completa).
-     *
-     * Útil para:
-     * - Exibir barras de durabilidade em GUIs
-     * - Alertas de item quase quebrando
-     * - Cálculos de eficiência
-     *
-     * @param item Item a ser verificado
-     * @return Porcentagem de durabilidade (0.0 a 1.0)
-     */
-    fun getDurabilityPercentage(item: ItemStack): Double {
-        val meta = item.itemMeta as? Damageable ?: return 1.0
-        val maxDurability = item.type.maxDurability.toInt()
-
-        if (maxDurability == 0) return 1.0
-
-        val remaining = maxDurability - meta.damage
-        return remaining.toDouble() / maxDurability.toDouble()
     }
 
     fun applyDurabilityDamage(tool: ItemStack) {
@@ -160,5 +181,4 @@ class ItemRepairService() {
         damageable.damage += 1
         tool.itemMeta = damageable
     }
-
 }

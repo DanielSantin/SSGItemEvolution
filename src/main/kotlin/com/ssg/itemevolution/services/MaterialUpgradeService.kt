@@ -143,13 +143,4 @@ class MaterialUpgradeService(
         return ItemStack(material, quantity)
     }
 
-    /**
-     * Verifica se o item pode ser melhorado para um material superior.
-     *
-     * @param item Item a ser verificado
-     * @return true se existe um próximo material na cadeia, false caso contrário
-     */
-    fun canBeUpgraded(item: ItemStack): Boolean {
-        return getNextMaterial(item.type) != null
-    }
 }

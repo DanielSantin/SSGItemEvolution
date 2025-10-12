@@ -4,7 +4,6 @@ import com.ssg.itemevolution.services.ItemDataService
 import com.ssg.itemevolution.services.ItemEvolutionService
 import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.utils.ConfigManager
-import com.ssg.itemevolution.utils.ItemUtils
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
@@ -20,7 +19,6 @@ import org.bukkit.inventory.ItemStack
  */
 class CommandHandler(
     private val configManager: ConfigManager,
-    private val itemUtils: ItemUtils,
     private val soulToolService: SoulToolService,
     private val itemDataService: ItemDataService,
     private val itemEvolutionService: ItemEvolutionService
@@ -130,17 +128,17 @@ class CommandHandler(
             return
         }
 
-        if (!itemUtils.isValidTool(item)) {
+        if (!itemEvolutionService.isValidTool(item)) {
             sender.sendMessage("§cEste item não é uma ferramenta válida.")
             return
         }
 
         val hasSoul = soulToolService.hasSoul(item)
-        val level = itemUtils.getItemLevel(item)
-        val points = itemUtils.getItemPoints(item)
-        val uses = itemUtils.getItemUses(item)
+        val level = itemEvolutionService.calculateLevelFromItem(item)
+        val points = itemDataService.getPoints(item)
+        val uses = itemDataService.getUses(item)
         val counterForActualLevel = itemEvolutionService.calculateCounterForLevel(level, item)
-        val actualCounter = itemUtils.getItemCounter(item) - counterForActualLevel
+        val actualCounter = itemDataService.getCounter(item) - counterForActualLevel
         val neededCounter = itemEvolutionService.calculateCounterForLevel(level + 1, item) - counterForActualLevel
 
         sender.sendMessage("§6§l=== INFORMAÇÕES DO ITEM ===")
@@ -172,7 +170,7 @@ class CommandHandler(
             return
         }
 
-        if (!itemUtils.isValidTool(item)) {
+        if (!itemEvolutionService.isValidTool(item)) {
             sender.sendMessage("§cEste item não é uma ferramenta válida.")
             return
         }
@@ -182,7 +180,7 @@ class CommandHandler(
             return
         }
 
-        val soulItem = itemUtils.setupItem(item)
+        val soulItem = itemEvolutionService.setupItem(item)
         sender.inventory.setItemInMainHand(soulItem)
         sender.sendMessage("§a[SSG] Alma adicionada ao item com sucesso!")
     }
@@ -251,7 +249,7 @@ class CommandHandler(
             return
         }
 
-        itemUtils.setItemLevel(item, level)
+        itemEvolutionService.setLevel(item, level)
         sender.sendMessage("§a[SSG] Nível do item definido para $level!")
     }
 
@@ -283,7 +281,7 @@ class CommandHandler(
             return
         }
 
-        itemUtils.addItemPoints(item, points)
+        itemDataService.addPoints(item, points)
         sender.sendMessage("§a[SSG] $points pontos adicionados ao item!")
     }
 

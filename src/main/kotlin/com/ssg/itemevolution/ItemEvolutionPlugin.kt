@@ -18,7 +18,6 @@ import com.ssg.itemevolution.services.ItemDataService
 import com.ssg.itemevolution.services.ItemEvolutionService
 import com.ssg.itemevolution.services.VisualEnchantmentService
 import com.ssg.itemevolution.ui.ItemDescriptionFormatter
-import com.ssg.itemevolution.utils.ItemUtils
 import org.bukkit.plugin.java.JavaPlugin
 
 class ItemEvolutionPlugin : JavaPlugin() {
@@ -35,7 +34,6 @@ class ItemEvolutionPlugin : JavaPlugin() {
         container.registerSingleton(ItemDataService::class)
         container.registerSingleton(ItemEvolutionService::class)
         container.registerSingleton(ItemDescriptionFormatter::class)
-        container.registerSingleton(ItemUtils::class)
         container.registerSingleton(EventManager::class)
         container.registerSingleton(DesabarEnchantment::class)
         container.registerSingleton(VeinMiningEnchantment::class)

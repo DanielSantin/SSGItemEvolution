@@ -2,14 +2,13 @@ package com.ssg.itemevolution.services
 
 import com.ssg.itemevolution.ItemEvolutionPlugin
 import com.ssg.itemevolution.keys.EvolutionKey
-import com.ssg.itemevolution.utils.ItemUtils
 import net.kyori.adventure.text.Component
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 
 class SoulToolService(
     private val plugin: ItemEvolutionPlugin,
-    private val itemUtils: ItemUtils
+    private val itemEvolutionService: ItemEvolutionService
 ) {
     enum class SoulToolCheckResult(val message: Component?) {
         VALID(null),
@@ -29,7 +28,7 @@ class SoulToolService(
 
     fun checkSoulEligibility(tool: ItemStack?): SoulToolCheckResult {
         if (tool == null) return SoulToolCheckResult.INVALID_TOOL
-        if (!itemUtils.isValidTool(tool)) return SoulToolCheckResult.INVALID_TOOL
+        if (!itemEvolutionService.isValidTool(tool)) return SoulToolCheckResult.INVALID_TOOL
         if (hasSoul(tool)) return SoulToolCheckResult.ALREADY_SOUL
         if (tool.enchantments.isNotEmpty()) return SoulToolCheckResult.HAS_ENCHANT
         return SoulToolCheckResult.VALID
@@ -40,7 +39,7 @@ class SoulToolService(
             if (checkSoulEligibility(tool) != SoulToolCheckResult.VALID) return false
             val toolCopy = tool.clone()
             addSoulToTool(toolCopy)
-            itemUtils.setupItem(toolCopy)
+            itemEvolutionService.setupItem(toolCopy)
             tool.itemMeta = toolCopy.itemMeta
             true
         } catch (e: Exception) {

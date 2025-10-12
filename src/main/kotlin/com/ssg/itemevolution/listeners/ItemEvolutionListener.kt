@@ -6,10 +6,10 @@ import com.nexomc.nexo.mechanics.furniture.FurnitureMechanic
 import com.ssg.itemevolution.enchantments.mining.AreaMiningEnchantment
 import com.ssg.itemevolution.handlers.*
 import com.ssg.itemevolution.services.EnchantmentService
+import com.ssg.itemevolution.services.ItemEvolutionService
 import com.ssg.itemevolution.services.ScoreboardService
 import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.ui.SoulToolDialog
-import com.ssg.itemevolution.utils.ItemUtils
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -33,7 +33,7 @@ import org.bukkit.inventory.ItemStack
 class ItemEvolutionListener(
     private val soulToolDialog: SoulToolDialog,
     private val eventManager: EventManager,
-    private val itemUtils: ItemUtils,
+    private val itemEvolutionService: ItemEvolutionService,
     private val enchantmentService: EnchantmentService,
     private val merchantHandler: MerchantHandler,
     private val soulToolService: SoulToolService,
@@ -74,36 +74,6 @@ class ItemEvolutionListener(
             }
         }
     }
-
-//    @EventHandler
-//    fun onArmorChange(event: com.destroystokyo.paper.event.player.PlayerArmorChangeEvent) {
-//        val player = event.player
-//        player.sendMessage("§e--- DEBUG PlayerArmorChangeEvent ---")
-//        player.sendMessage("§7Slot: §f${event.slot}")
-//        player.sendMessage("§7SlotType (deprecated): §f${event.slotType}")
-//        player.sendMessage("§7Old Item: §f${event.oldItem?.type ?: "null"} x${event.oldItem?.amount ?: 0}")
-//        player.sendMessage("§7New Item: §f${event.newItem?.type ?: "null"} x${event.newItem?.amount ?: 0}")
-//        player.sendMessage("§e--- END DEBUG ---")
-//    }
-
-//    @EventHandler
-//    fun onPlayerInteract(event: PlayerInteractEvent) {
-//        event.setUseItemInHand(Event.Result.DENY)
-//        event.isCancelled = true
-//        val player = event.player
-//        player.sendMessage("§e--- DEBUG PlayerInteractEvent ---")
-//        player.sendMessage("§7Action: §f${event.action}")
-//        player.sendMessage("§7Item: §f${event.item?.type ?: "null"} x${event.item?.amount ?: 0}")
-//        player.sendMessage("§7Hand: §f${event.hand}")
-//        player.sendMessage("§7Clicked Block: §f${event.clickedBlock?.type ?: "null"}")
-//        player.sendMessage("§7Block Face: §f${event.blockFace}")
-//        player.sendMessage("§7Use Item In Hand: §f${event.useItemInHand()}")
-//        player.sendMessage("§7Use Interacted Block: §f${event.useInteractedBlock()}")
-//        player.sendMessage("§7Cancelled: §f${event.isCancelled}")
-//        player.sendMessage("§e--- END DEBUG ---")
-//    }
-
-
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
@@ -188,7 +158,7 @@ class ItemEvolutionListener(
     private fun processItemEvolution(player: Player, tool: ItemStack, usageType: ItemUsageType) {
         if (!soulToolService.hasSoul(tool)) return
 
-        val upgradedTool = itemUtils.upgradeItem(tool)
+        val upgradedTool = itemEvolutionService.upgradeItem(tool)
 
         // Disparar evento de uso do item
         val usageEvent = EventBuilder.itemUsage(usageType)
@@ -301,8 +271,8 @@ class ItemEvolutionListener(
         )
 
         armorPieces.filterNotNull().forEach { armor ->
-            if (itemUtils.isValidTool(armor) && soulToolService.hasSoul(armor)) {
-                val upgradedArmor = itemUtils.upgradeItem(armor)
+            if (itemEvolutionService.isValidTool(armor) && soulToolService.hasSoul(armor)) {
+                val upgradedArmor = itemEvolutionService.upgradeItem(armor)
                 armor.itemMeta = upgradedArmor.itemMeta
 
                 // Processar encantamentos de defesa
