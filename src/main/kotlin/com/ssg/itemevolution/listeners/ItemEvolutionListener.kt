@@ -14,6 +14,7 @@ import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.ui.SoulToolDialog
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
 import org.bukkit.entity.Snowman
 import org.bukkit.event.Event
@@ -98,13 +99,14 @@ class ItemEvolutionListener(
 
         if (event.finalDamage <= 0) return
 
+        val victim = event.entity
+        if (victim is Snowman || victim is ArmorStand) return
+
         // Processar evolução do item
         processItemEvolution(attacker, tool, ItemUsageType.ATTACK)
 
         // Processar encantamentos de combate
         processEnchantments(attacker, tool, event.entity, EnchantmentEventType.ENTITY_DAMAGE, event)
-
-
     }
 
     @EventHandler
