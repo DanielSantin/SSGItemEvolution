@@ -46,8 +46,6 @@ class EventManager(private val plugin: JavaPlugin) : InitializableService, Dispo
      * Dispara evento de uso de encantamento
      */
     fun fireEnchantmentEvent(event: EnchantmentEvent): EnchantmentEventResult {
-        plugin.logger.info("Enviando evento de encantamento ${event.type} para ${event.enchantmentKey}")
-
         val typeMap = enchantmentHandlers[event.enchantmentKey]
             ?: return EnchantmentEventResult.IGNORED
 
@@ -55,13 +53,10 @@ class EventManager(private val plugin: JavaPlugin) : InitializableService, Dispo
         val handlers = typeMap[event.type]
             ?: return EnchantmentEventResult.IGNORED
 
-        plugin.logger.info("Encontramos ${handlers.size} handlers para ${event.enchantmentKey}:${event.type}")
-
         var result = EnchantmentEventResult.IGNORED
         for (handler in handlers) {
             try {
                 // Seu loop de execução e verificação de cancelamento permanece o mesmo
-                plugin.logger.info("Executando handler de encantamento ${event.enchantmentKey} para o tipo ${event.type}")
                 val handlerResult = handler.handle(event)
 
                 // Prioriza CANCELLED, depois HANDLED sobre IGNORED
