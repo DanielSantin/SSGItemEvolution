@@ -8,6 +8,7 @@ import com.ssg.itemevolution.services.EnchantmentService
 import com.ssg.itemevolution.services.ItemEvolutionService
 import com.ssg.itemevolution.services.ItemRepairService
 import com.ssg.itemevolution.services.MaterialUpgradeService
+import com.ssg.itemevolution.services.VisualEnchantmentService
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
 import net.kyori.adventure.text.Component
@@ -33,6 +34,7 @@ class MerchantHandler(
     private val itemEvolutionService: ItemEvolutionService,
     private val itemRepairService: ItemRepairService,
     private val materialUpgradeService: MaterialUpgradeService,
+    private val visualEnchantmentService: VisualEnchantmentService
 ) {
     fun openMerchant(player: Player, tool: ItemStack) {
         if (!itemEvolutionService.isValidTool(tool)) {
@@ -81,6 +83,7 @@ class MerchantHandler(
         val upgradeItemStack = materialUpgradeService.getUpgradeItemStack(tool)
         if (upgradeItemStack != null) {
             val upgradedTool = itemEvolutionService.improveItem(tool)
+            visualEnchantmentService.updateVisualModelOnUpgrade(tool, upgradedTool)
             val upgradeRecipe = MerchantRecipe(upgradedTool, 999)
             upgradeRecipe.addIngredient(tool)
             upgradeRecipe.addIngredient(upgradeItemStack)
@@ -176,6 +179,9 @@ class MerchantHandler(
         val enchantedTool = enchantmentService.enchantItem(tool, enchantName, nextLevel)
         reducePoints(enchantedTool, requiredPoints)
         val recipe = MerchantRecipe(enchantedTool, 1)
+        if (visualEnchantmentService.hasVisualModel(enchantName)) {
+            visualEnchantmentService.applyVisualModel(enchantedTool, enchantName)
+        }
         recipe.addIngredient(tool)
         recipe.addIngredient(cost)
         trades.add(recipe)

@@ -17,6 +17,7 @@ import com.ssg.itemevolution.services.ItemDataService
 import com.ssg.itemevolution.services.ItemEvolutionService
 import com.ssg.itemevolution.services.ToolBlockService
 import com.ssg.itemevolution.ui.ItemDescriptionFormatter
+import com.ssg.itemevolution.services.VisualEnchantmentService
 import org.bukkit.plugin.java.JavaPlugin
 
 class ItemEvolutionPlugin : JavaPlugin() {
@@ -40,6 +41,7 @@ class ItemEvolutionPlugin : JavaPlugin() {
         container.registerSingleton(EternaEnchantment::class)
         container.registerSingleton(EnchantmentService::class)
         container.registerSingleton(SoulToolService::class)
+        container.registerSingleton(VisualEnchantmentService::class)
         container.registerSingleton(MerchantHandler::class)
         container.registerSingleton(SoulToolDialog::class)
         container.registerSingleton(EnchantmentRegistrationHandler::class)
