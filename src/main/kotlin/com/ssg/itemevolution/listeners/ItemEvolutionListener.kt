@@ -39,7 +39,6 @@ class ItemEvolutionListener(
     private val enchantmentService: EnchantmentService,
     private val merchantHandler: MerchantHandler,
     private val soulToolService: SoulToolService,
-    private val areaMiningEnchantment: AreaMiningEnchantment,
     private val scoreboardService: ScoreboardService
 ) : Listener {
     private val hasNexo = Bukkit.getPluginManager().getPlugin("Nexo") != null
@@ -129,19 +128,12 @@ class ItemEvolutionListener(
     fun onItemChange(event: PlayerItemHeldEvent) {
         val player = event.player
         val newItem = player.inventory.getItem(event.newSlot)
-        val oldItem = player.inventory.getItem(event.previousSlot)
-
-        areaMiningEnchantment.removeAreaMiningModifier(player, oldItem)
-        areaMiningEnchantment.applyAreaMiningModifier(player, newItem)
-
         if (newItem != null && soulToolService.hasSoul(newItem)) {
             scoreboardService.showFor(player, newItem)
         } else {
             scoreboardService.hideFor(player)
         }
     }
-
-
 
     // MÉTODOS AUXILIARES
     private fun isSmithingTable(block: org.bukkit.block.Block?): Boolean {

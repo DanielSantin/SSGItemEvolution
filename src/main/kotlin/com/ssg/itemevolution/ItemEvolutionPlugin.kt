@@ -12,6 +12,7 @@ import com.ssg.itemevolution.handlers.EnchantmentRegistrationHandler
 import com.ssg.itemevolution.handlers.MerchantHandler
 import com.ssg.itemevolution.services.SoulToolService
 import com.ssg.itemevolution.listeners.ItemEvolutionListener
+import com.ssg.itemevolution.services.EnchantmentAttributeService
 import com.ssg.itemevolution.services.EnchantmentService
 import com.ssg.itemevolution.services.ItemDataService
 import com.ssg.itemevolution.services.ItemEvolutionService
@@ -31,6 +32,7 @@ class ItemEvolutionPlugin : JavaPlugin() {
 
         // 2. Registrar todas as suas classes de serviço como Singletons
         container.registerSingleton(ConfigManager::class)
+        container.registerSingleton(EnchantmentAttributeService::class)
         container.registerSingleton(ItemDataService::class)
         container.registerSingleton(ToolBlockService::class)
         container.registerSingleton(ItemEvolutionService::class)

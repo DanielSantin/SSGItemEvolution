@@ -123,3 +123,68 @@
     chestplate: [unbreaking, mending]
     leggings: [unbreaking, mending]
     boots: [unbreaking, mending]
+
+  # --------------------------------------------------------------------------------------
+  # DOCUMENTAÇÃO DE EFEITOS DE ATRIBUTO PARA ENCANTAMENTOS
+  # --------------------------------------------------------------------------------------
+  #
+  # ESTRUTURA:
+  # <NamespacedKey do Encantamento>:
+  #   <Nome do Atributo (Ex: max_health, block_break_speed)>:
+  #     "<Nível do Encantamento (1, 2, 3...)>":
+  #       value: <Valor do modificador (Double)>
+  #       operation: <Tipo de operação>
+  #       slot: <Slot do equipamento>
+  #
+  # OPÇÕES VÁLIDAS PARA 'operation':
+  # - ADD_NUMBER (Adiciona o valor diretamente ao atributo base)
+  # - ADD_SCALAR (Adiciona o valor como porcentagem do atributo base)
+  # - MULTIPLY_SCALAR_1 (Adiciona o valor como porcentagem do valor final do atributo, o mais comum para penalidades/multiplicadores)
+  #
+  # OPÇÕES VÁLIDAS PARA 'slot':
+  # - ANY
+  # - HAND
+  # - ARMOR
+  # - HEAD
+  # - BODY
+  # - CHEST
+  # - LEGS
+  # - FEET
+  # - MAINHAND
+  # - OFFHAND
+  # - SADDLE
+  #
+  # EXEMPLO COM ENCANTAMENTO VANILLA (MINECRAFT:EFFICIENCY)
+  # minecraft:efficiency:
+  #   block_break_speed:
+  #     "1":
+  #       value: 0.1 # Aumenta a velocidade em 10% (Exemplo)
+  #       operation: MULTIPLY_SCALAR_1
+  #       slot: HAND
+  #     "5":
+  #       value: 0.5 # Aumenta a velocidade em 50% (Exemplo)
+  #       operation: MULTIPLY_SCALAR_1
+  #       slot: HAND
+  # --------------------------------------------------------------------------------------
+
+  attribute-effects:
+    "supera:area_mining":
+      block_break_speed:
+        "1":
+          value: -0.3
+          operation: MULTIPLY_SCALAR_1
+          slot: HAND
+        "2":
+          value: -0.6
+          operation: MULTIPLY_SCALAR_1
+          slot: HAND
+      block_interaction_range:
+        "1":
+          value: 1.0
+          operation: ADD_NUMBER
+          slot: HAND
+        "2":
+          value: 1.0
+          operation: ADD_NUMBER
+          slot: HAND
+

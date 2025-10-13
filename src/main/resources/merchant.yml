@@ -1,11 +1,6 @@
 merchant:
   # Título da interface do merchant
   title: "§6§lMercador de Melhorias"
-
-  # Máximo de trades por merchant
-  max-trades: 999
-
-  # Configurações de funcionalidades
   features:
     upgrade-enabled: true
     repair-enabled: true

@@ -8,9 +8,9 @@ import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemStack
 
 class EnchantmentService(
-    private val configManager: ConfigManager
-    ) {
-
+    private val configManager: ConfigManager,
+    private val enchantmentAttributeService: EnchantmentAttributeService
+) {
     // Cache dos grupos de encantamentos para melhor performance
     private val enchantmentGroups: Map<String, List<String>> by lazy {
         val groups = mutableMapOf<String, List<String>>()
@@ -48,12 +48,8 @@ class EnchantmentService(
         val newItem = item.clone()
         val enchantment = getEnchantment(enchantmentKey) ?: return newItem
         newItem.addUnsafeEnchantment(enchantment, level)
+        enchantmentAttributeService.applyCustomEnchantmentAttributes(newItem)
         return newItem
-    }
-
-    fun hasEnchantment(item: ItemStack, enchantmentKey: String): Boolean {
-        val enchantment = getEnchantment(enchantmentKey) ?: return false
-        return item.containsEnchantment(enchantment)
     }
 
     fun getEnchantmentLevel(item: ItemStack, enchantmentKey: String): Int {
