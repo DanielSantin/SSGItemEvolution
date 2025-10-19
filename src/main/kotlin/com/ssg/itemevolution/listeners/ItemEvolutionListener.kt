@@ -5,7 +5,6 @@ import ItemUsageType
 import com.nexomc.nexo.api.NexoFurniture
 import com.nexomc.nexo.api.events.furniture.NexoFurnitureInteractEvent
 import com.nexomc.nexo.mechanics.furniture.FurnitureMechanic
-import com.ssg.itemevolution.enchantments.mining.AreaMiningEnchantment
 import com.ssg.itemevolution.handlers.*
 import com.ssg.itemevolution.services.EnchantmentService
 import com.ssg.itemevolution.services.ItemEvolutionService
@@ -173,7 +172,6 @@ class ItemEvolutionListener(
         val enchantments = enchantmentService.listEnchantments(tool)
 
         // PASSO 1: Disparar o evento BEFORE_USE para todos os encantamentos
-        // O EternaHandler já irá lidar com a verificação de item quebrado
         val preEventContext = mutableMapOf<String, Any>(
             "player" to player,
             "item" to tool,

@@ -102,9 +102,21 @@ class MerchantHandler(
 
         for (enchantName in enchantments) {
             if (!allowedEnchantments.contains(enchantName)) continue
-            val block = !enchantmentService.isEnchantmentCompatible(tool, enchantName)
-            createEnchantmentTrade(tool, enchantName, config, trades, block)
+            createEnchantmentTrade(tool, enchantName, config, trades)
         }
+    }
+
+    private fun addTrade(
+        result: ItemStack,
+        tool: ItemStack,
+        cost: ItemStack,
+        maxUses: Int,
+        trades: MutableList<MerchantRecipe>
+    ) {
+        val recipe = MerchantRecipe(result, maxUses)
+        recipe.addIngredient(tool)
+        recipe.addIngredient(cost)
+        trades.add(recipe)
     }
 
 
@@ -113,7 +125,6 @@ class MerchantHandler(
         enchantName: String,
         config: FileConfiguration,
         trades: MutableList<MerchantRecipe>,
-        blockTrade: Boolean = false
     ) {
         val enchantSection = config.getConfigurationSection("enchantments.$enchantName") ?: return
         val costItems = enchantSection.getStringList("item-costs")
@@ -125,75 +136,70 @@ class MerchantHandler(
         val rawCostString = costItems.getOrNull(currentLevel) ?: return
         val cost = parseOrCreateCostItem(rawCostString)
 
-        if (blockTrade) {
-            cost.addUnsafeEnchantment(Enchantment.UNBREAKING, 10)
-            val meta = cost.itemMeta
-            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
-            val conflicting = enchantmentService.getConflictingEnchantments(enchantName)
-            val conflictNames = conflicting.joinToString(", ") { it.replace("_", " ").capitalize() }
-            meta.lore(listOf(
-                Component.text("⚠ Incompatível com:").color(NamedTextColor.RED).decoration(TextDecoration.ITALIC, false),
-                Component.text(conflictNames).color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
-            ))
-            cost.itemMeta = meta
-
-            val blockedTool = enchantmentService.enchantItem(tool.clone(), enchantName, 1)
-            val recipe = MerchantRecipe(blockedTool, 0)
-            recipe.addIngredient(tool)
-            recipe.addIngredient(cost)
-            trades.add(recipe)
-            return
-        }
-
-        val requiredPoints = costPoints.getOrNull(currentLevel) ?: return
-        val currentPoints = getCurrentPoints(tool)
-
-        if (requiredPoints > currentPoints) {
-            makeInsufficientPointsTrade(tool, enchantName, cost, trades, requiredPoints, currentPoints)
-            return
-        }
-
-        // Trade normal
+        // 1. Cria o item de pré-visualização/resultado (independente de estar bloqueado)
         val enchantedTool = enchantmentService.enchantItem(tool, enchantName, nextLevel)
-        reducePoints(enchantedTool, requiredPoints)
 
+        // 2. Aplica o modelo visual ao item de pré-visualização
         if (visualEnchantmentService.hasVisualModel(enchantName)) {
             visualEnchantmentService.applyVisualModel(enchantedTool, enchantName)
         }
 
-        val recipe = MerchantRecipe(enchantedTool, 1)
-        recipe.addIngredient(tool)
-        recipe.addIngredient(cost)
-        trades.add(recipe)
+        // A. Bloqueio por Incompatibilidade
+        if (!enchantmentService.isEnchantmentCompatible(tool, enchantName)) { // Verifica e entra
+            val conflicting = enchantmentService.getConflictingEnchantments(enchantName)
+            val conflictNames = conflicting.joinToString(", ") { it.replace("_", " ").capitalize() }
+
+            val lore = listOf(
+                Component.text("⚠ Incompatível com:").color(NamedTextColor.RED).decoration(TextDecoration.ITALIC, false),
+                Component.text(conflictNames).color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+            )
+
+            addBlockedTrade(enchantedTool, tool, cost, trades, lore)
+            return // Trade bloqueado adicionado, sai da função
+        }
+
+        // B. Bloqueio por Pontos Insuficientes
+        val requiredPoints = costPoints.getOrNull(currentLevel) ?: return
+        val currentPoints = getCurrentPoints(tool)
+
+        if (requiredPoints > currentPoints) { // Verifica e entra
+            val lore = listOf(
+                Component.text("Pontos insuficientes: $currentPoints/$requiredPoints")
+                    .color(NamedTextColor.RED)
+                    .decoration(TextDecoration.ITALIC, false)
+            )
+
+            addBlockedTrade(enchantedTool, tool, cost, trades, lore)
+            return // Trade bloqueado adicionado, sai da função
+        }
+
+        // --- Trade Válido ---
+        // Reduz os pontos SOMENTE no item final
+        reducePoints(enchantedTool, requiredPoints)
+
+        // Adiciona o trade normal (maxUses = 1)
+        addTrade(enchantedTool, tool, cost, 1, trades)
     }
-
-
-    private fun makeInsufficientPointsTrade(
+    /**
+     * Prepara o item de custo com o visual de bloqueio e adiciona o trade com 0 usos.
+     */
+    private fun addBlockedTrade(
+        previewTool: ItemStack,
         tool: ItemStack,
-        enchantName: String,
         cost: ItemStack,
         trades: MutableList<MerchantRecipe>,
-        required: Int,
-        current: Int
+        loreLines: List<Component>
     ) {
+        // Prepara o item de custo com o visual de bloqueio (encantamento, flags, lore)
         cost.addUnsafeEnchantment(Enchantment.UNBREAKING, 10)
         val meta = cost.itemMeta
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
-        meta.lore(listOf(
-            Component.text("Pontos insuficientes: $current/$required")
-                .color(NamedTextColor.RED)
-                .decoration(TextDecoration.ITALIC, false)
-        ))
+        meta.lore(loreLines)
         cost.itemMeta = meta
 
-        val previewTool = enchantmentService.enchantItem(tool, enchantName, enchantmentService.getEnchantmentLevel(tool, enchantName) + 1)
-
-        val recipe = MerchantRecipe(previewTool, 0) // bloqueado
-        recipe.addIngredient(tool)
-        recipe.addIngredient(cost)
-        trades.add(recipe)
+        // Adiciona o trade bloqueado (maxUses = 0)
+        addTrade(previewTool, tool, cost, 0, trades)
     }
-
 
     /**
      * Auxiliar para processar o custo do item
